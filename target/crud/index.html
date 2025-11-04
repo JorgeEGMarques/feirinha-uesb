@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste da API de Usuários</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        div { margin-bottom: 10px; }
+        label { display: inline-block; width: 100px; }
+        input { width: 200px; }
+        button { padding: 5px 10px; }
+        #resposta { margin-top: 20px; padding: 10px; background-color: #f0f0f0; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+    <h1>Testando o Cadastro de Usuário (POST)</h1>
+    <p>Isso é um HTML puro que simula o seu frontend React.</p>
+
+    <div>
+        <label for="nome">Nome:</label>
+        <input type="text" id="nome" value="Carlos Teste">
+    </div>
+    <div>
+        <label for="email">Email:</label>
+        <input type="email" id="email" value="carlos@teste.com">
+    </div>
+    
+    <button id="btnEnviar">Enviar POST para /api/usuarios</button>
+    
+    <hr>
+    <h3>Resposta do Servidor:</h3>
+    <pre id="resposta">(Aguardando envio...)</pre>
+
+    <script>
+        // "Ouvinte" de evento: espera o clique no botão
+        document.getElementById("btnEnviar").addEventListener("click", function() {
+            
+            // 1. Pega os dados digitados nos campos
+            const nomeUsuario = document.getElementById("nome").value;
+            const emailUsuario = document.getElementById("email").value;
+
+            // 2. Monta o objeto JSON (exatamente o que o React faria)
+            const dadosUsuario = {
+                nome: nomeUsuario,
+                email: emailUsuario
+            };
+
+            // 3. Mostra o que estamos enviando
+            document.getElementById("resposta").textContent = "Enviando Requisição POST...\n" + JSON.stringify(dadosUsuario, null, 2);
+
+            // 4. A "Mágica" (Fetch API) - Isso é o que o 'axios' do React faz por baixo dos panos
+            fetch('http://localhost:8080/crud/api/usuarios', {
+                method: 'POST', // Define o método como POST
+                
+                headers: {
+                    // Avisa ao servidor que estamos enviando JSON
+                    'Content-Type': 'application/json' 
+                },
+                
+                // Converte o objeto JavaScript em uma String JSON e envia no "body"
+                body: JSON.stringify(dadosUsuario) 
+            })
+            .then(response => {
+                // Pega a resposta do servidor (em formato JSON)
+                return response.json(); 
+            })
+            .then(dadosDaResposta => {
+                // 5. Mostra a resposta do servidor na página
+                document.getElementById("resposta").textContent = 
+                    "Sucesso! (Status 201)\n\nResposta do Servidor:\n" + 
+                    JSON.stringify(dadosDaResposta, null, 2);
+            })
+            .catch(error => {
+                // 6. Se der erro (ex: 401, 404, 500), mostra o erro
+                console.error('Erro na requisição:', error);
+                document.getElementById("resposta").textContent = "Erro na requisição! " + error;
+            });
+        });
+    </script>
+
+</body>
+</html>
