@@ -1,3 +1,5 @@
+package model.entities;
+
 import java.time.LocalDate;
 
 public class Reservation {
@@ -7,6 +9,20 @@ public class Reservation {
 
     public Reservation(){}
     public Reservation(long code, String holderCpf, LocalDate reservationDate){
+        this.code = code;
+        this.holderCpf = holderCpf;
+        this.reservationDate = reservationDate;
+    }
 
+    public long getCode(){
+        return this.code;
+    }
+
+    public String getHolderCpf(){
+        return holderCpf;
+    }
+
+    public LocalDate getReservationDate(){
+        return reservationDate;
     }
 }
