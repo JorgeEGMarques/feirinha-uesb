@@ -1,8 +1,5 @@
 package controller;
 
-// Importe seu modelo
-import model.Product; 
-
 // Imports do Jackson (para JSON)
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -12,6 +9,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import model.entities.Product;
 
 import java.io.IOException;
 
