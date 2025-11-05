@@ -9,12 +9,12 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.entities.User;
+import model.entities.Reservation;
 
 import java.io.IOException;
 
-@WebServlet("/api/usuarios")
-public class UsuarioServlet extends HttpServlet {
+@WebServlet("/api/reservations/*")
+public class ReservationServlet extends HttpServlet {
 
     private ObjectMapper mapper = new ObjectMapper(); // Objeto que converte JSON
 
@@ -31,11 +31,11 @@ public class UsuarioServlet extends HttpServlet {
         String jsonBody = sb.toString();
 
         // 2. CONVERTER O JSON PARA UM OBJETO JAVA
-        User novoUsuario = mapper.readValue(jsonBody, User.class);
+        Reservation novoUsuario = mapper.readValue(jsonBody, Reservation.class);
 
         // --- AQUI ENTRA A LÓGICA DO JDBC ---
         // Por enquanto, vamos só simular que salvamos no banco e demos um ID a ele
-        System.out.println("Recebido no backend: " + novoUsuario.getNome());
+        System.out.println("Recebido no backend: " + novoUsuario.getCode());
         //novoUsuario.setId(1); // Simula que o banco deu o ID 1
         // --- FIM DA LÓGICA DO BANCO ---
 
