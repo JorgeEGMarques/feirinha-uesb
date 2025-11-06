@@ -13,7 +13,7 @@ import model.entities.Product;
 
 import java.io.IOException;
 
-@WebServlet("/api/produtos/*")
+@WebServlet("/api/products")
 public class ProductServlet extends HttpServlet {
 
     private ObjectMapper mapper = new ObjectMapper(); // Objeto que converte JSON
