@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>CRUD de Produtos - Feirinha UESB</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>Gerenciamento de Produtos</h1>
+
+  <section id="form-section">
+    <h2 id="form-title">Cadastrar Produto</h2>
+    <form id="product-form">
+      <input type="hidden" id="code">
+      <label>Nome:</label>
+      <input type="text" id="name" placeholder="Nome do produto" required>
+      <label>Preço:</label>
+      <input type="number" step="0.01" id="price" placeholder="Preço" required>
+      <label>Descrição:</label>
+      <input type="text" id="description" placeholder="Descrição">
+      <button type="submit">Salvar</button>
+      <button type="button" id="cancel-btn" class="hidden">Cancelar</button>
+    </form>
+  </section>
+
+  <section id="list-section">
+    <h2>Lista de Produtos</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nome</th>
+          <th>Preço (R$)</th>
+          <th>Descrição</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="product-table-body">
+        <!-- Linhas adicionadas via JS -->
+      </tbody>
+    </table>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
