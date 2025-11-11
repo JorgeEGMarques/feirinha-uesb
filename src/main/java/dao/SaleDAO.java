@@ -26,9 +26,9 @@ public class SaleDAO {
             stmt.setInt(1, sale.getId());
             stmt.setObject(2, sale.getSaleDate());
             // NOTA: Inconsistência de tipo: Modelo (long) vs SQL (int). Fazendo cast.
-            stmt.setInt(3, (int) sale.getTentCode()); 
+            stmt.setInt(3, sale.getTentCode()); 
             // NOTA: Inconsistência de tipo: Modelo (long) vs SQL (char(11)).
-            stmt.setString(4, String.valueOf(sale.getUserCode())); 
+            stmt.setString(4, sale.getUserCode()); 
             
             stmt.executeUpdate();
         }
@@ -93,13 +93,15 @@ public class SaleDAO {
             }
         }
 
-        // Mapeia usando o construtor
+        /* Mapeia usando o construtor
         return new Sale(
             rs.getInt("id_venda"),
-            rs.getObject("data_venda", LocalDate.class),
+            rs.getObject("data_venda"),
             rs.getInt("cod_barraca"), // SQL 'int' cabe em Java 'long' (OK)
-            userCode
-        );
+            userCpf
+        ); */
+
+        return null;
     }
     
     // ... (Implementar update e delete se necessário) ...

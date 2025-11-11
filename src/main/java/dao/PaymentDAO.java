@@ -13,18 +13,28 @@ public class PaymentDAO {
      * Cria um novo pagamento no banco de dados.
      */
     public void create(Payment payment) throws SQLException {
-        // CORREÇÃO: O SQL deve inserir na tabela 'pagamento'
         String sql = "INSERT INTO public.pagamento (id_pagamento, id_venda, cod_reserva, cpf_comprador, cod_barraca, forma_pagamento, data_pagamento) VALUES (?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            // CORREÇÃO: Mapeamento correto dos campos do objeto Payment
             stmt.setInt(1, payment.getId());
             
-            // Chaves estrangeiras podem ser nulas (id_venda ou cod_reserva)
-            // O JDBC trata 'null' em objetos (Integer) para colunas 'int'
+            // --- LÓGICA CORRIGIDA ---
+            // Agora checamos por 'null' (Objeto), não por '0' (primitivo)
+            if (payment.getSaleId() == null) {
+                stmt.setNull(2, java.sql.Types.INTEGER);
+            } else {
+                stmt.setInt(2, payment.getSaleId());
+            }
 
+            if (payment.getReservationCode() == null) {
+                 stmt.setNull(3, java.sql.Types.INTEGER);
+            } else {
+                 // SQL 'cod_reserva' é INT, nosso modelo é Long. Fazemos o cast.
+                stmt.setInt(3, payment.getReservationCode().intValue());
+            }
+            
             stmt.setString(4, payment.getBuyerCpf());
             stmt.setInt(5, payment.getTentCode());
             stmt.setString(6, payment.getPaymentForm());
@@ -62,24 +72,17 @@ public class PaymentDAO {
         Payment p = new Payment();
         p.setId(rs.getInt("id_pagamento"));
         
-        // getInt() retorna 0 se o valor for NULL, então precisamos checar
-        int idVenda = rs.getInt("id_venda");
-        if (!rs.wasNull()) {
-            p.setSaleId(idVenda);
-        }
-        
-        int codReserva = rs.getInt("cod_reserva");
-        if (!rs.wasNull()) {
-            p.setReservationCode(codReserva);
-        }
+        // --- LÓGICA CORRIGIDA ---
+        // Usa getObject para checar por NULL do banco
+        p.setSaleId(rs.getObject("id_venda", Integer.class));
+        Long reservationCode = rs.getObject("cod_reserva", Long.class);
+        p.setReservationCode(reservationCode);
+        // --- FIM DA CORREÇÃO ---
 
         p.setBuyerCpf(rs.getString("cpf_comprador"));
         p.setTentCode(rs.getInt("cod_barraca"));
         p.setPaymentForm(rs.getString("forma_pagamento"));
-        
-        // Use getObject para converter 'date' do SQL para 'LocalDate' do Java
         p.setPaymentDate(rs.getObject("data_pagamento", LocalDate.class));
-        
         return p;
     }
     

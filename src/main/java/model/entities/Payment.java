@@ -3,16 +3,23 @@ package model.entities;
 import java.time.LocalDate;
 
 public class Payment {
-    private int id;
-    private int saleId;
-    private long reservationCode;
+    private int id; // Chave primária, geralmente não é nula
+    
+    // --- MUDANÇAS AQUI ---
+    // Colunas que podem ser NULAS (referências) devem ser Objetos
+    private Integer saleId; 
+    private Long reservationCode; 
+    // --- FIM DAS MUDANÇAS ---
+
     private String buyerCpf;
-    private int tentCode;
+    private int tentCode; // Assumindo que cod_barraca é NOT NULL no SQL
     private String paymentForm;
     private LocalDate paymentDate;
 
     public Payment(){}
-    public Payment(int id, int saleId, long reservationCode, String buyerCpf, int tentCode, String paymentForm, LocalDate paymentDate){
+    
+    // (O construtor também muda)
+    public Payment(int id, Integer saleId, Long reservationCode, String buyerCpf, int tentCode, String paymentForm, LocalDate paymentDate){
         this.id = id;
         this.saleId = saleId;
         this.reservationCode = reservationCode;
@@ -26,13 +33,14 @@ public class Payment {
         return id;
     }
 
-    public int getSaleId(){
+    // --- MUDANÇAS AQUI ---
+    public Integer getSaleId(){
         return saleId;
     }
-
-    public long getReservationCode(){
+    public Long getReservationCode(){
         return reservationCode;
     }
+    // --- FIM DAS MUDANÇAS ---
 
     public String getBuyerCpf(){
         return buyerCpf;
@@ -49,15 +57,20 @@ public class Payment {
     public LocalDate getPaymentDate(){
         return paymentDate;
     }
+    
     public void setId(int id) {
         this.id = id;
     }
-    public void setSaleId(int saleId) {
+
+    // --- MUDANÇAS AQUI ---
+    public void setSaleId(Integer saleId) {
         this.saleId = saleId;
     }
-    public void setReservationCode(long reservationCode) {
+    public void setReservationCode(Long reservationCode) {
         this.reservationCode = reservationCode;
     }
+    // --- FIM DAS MUDANÇAS ---
+    
     public void setBuyerCpf(String buyerCpf) {
         this.buyerCpf = buyerCpf;
     }
@@ -70,6 +83,4 @@ public class Payment {
     public void setPaymentDate(LocalDate paymentDate) {
         this.paymentDate = paymentDate;
     }
-    
-    
 }

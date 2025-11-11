@@ -5,11 +5,11 @@ import java.time.LocalDate;
 public class Sale {
     private int id;
     private LocalDate saleDate;
-    private long tentCode;
-    private long userCode;
+    private int tentCode;
+    private String userCode;
 
     public Sale(){}
-    public Sale(int id, LocalDate saleDate, long tentCode, long userCode){
+    public Sale(int id, LocalDate saleDate, int tentCode, String userCode){
         this.id = id;
         this.saleDate = saleDate;
         this.tentCode = tentCode;
@@ -24,11 +24,26 @@ public class Sale {
         return saleDate;
     }
 
-    public long getTentCode(){
+    public int getTentCode(){
         return tentCode;
     }
 
-    public long getUserCode(){
+    public String getUserCode(){
         return userCode;
     }
+    
+    public void setId(int id) {
+        this.id = id;
+    }
+    public void setSaleDate(LocalDate saleDate) {
+        this.saleDate = saleDate;
+    }
+    public void setTentCode(int tentCode) {
+        this.tentCode = tentCode;
+    }
+    public void setUserCode(String userCode) {
+        this.userCode = userCode;
+    }
+
+    
 }

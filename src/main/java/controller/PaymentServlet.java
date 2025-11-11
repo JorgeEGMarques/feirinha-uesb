@@ -54,9 +54,8 @@ public class PaymentServlet extends HttpServlet {
             // --- LÓGICA DO BANCO DE DADOS (VAI SER O PRÓXIMO PASSO) ---
             
             // (Descomente esta linha quando estiver pronto)
-            // paymentDAO.create(newPayment); 
-            
-            System.out.println("Recebido no backend, ID: " + newPayment.getId());
+            // 1. DESCOMENTE A LINHA ABAIXO PARA SALVAR NO BANCO
+            paymentDAO.create(newPayment); 
 
             // --- FIM DA LÓGICA DO BANCO ---
             
@@ -68,10 +67,11 @@ public class PaymentServlet extends HttpServlet {
             String jsonResposta = mapper.writeValueAsString(newPayment);
             resp.getWriter().print(jsonResposta);
 
-        // } catch (SQLException e) { // (Descomente quando adicionar a chamada do DAO)
-        //     resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); 
-        //     resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
-        //     e.printStackTrace();
+        // 2. DESCOMENTE ESTE BLOCO CATCH para lidar com erros do banco
+        } catch (SQLException e) { // (Descomente quando adicionar a chamada do DAO)
+             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); 
+             resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+             e.printStackTrace();
         } catch (Exception e) {
             // (Pega erros de JSON mal formatado, como o formato da data)
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); 
