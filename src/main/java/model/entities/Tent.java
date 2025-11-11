@@ -1,18 +1,18 @@
 package model.entities;
 
 public class Tent {
-    private long code;
+    private int code;
     private String cpfHolder;
     private String name;
 
     public Tent(){}
-    public Tent(long code, String cpfHolder, String name){
+    public Tent(int code, String cpfHolder, String name){
         this.code = code;
         this.cpfHolder = cpfHolder;
         this.name = name;
     }
 
-    public long getCode(){
+    public int getCode(){
         return code;
     }
 
@@ -23,4 +23,14 @@ public class Tent {
     public String getName(){
         return name;
     }
+    public void setCode(int code) {
+        this.code = code;
+    }
+    public void setCpfHolder(String cpfHolder) {
+        this.cpfHolder = cpfHolder;
+    }
+    public void setName(String name) {
+        this.name = name;
+    }
+
 }

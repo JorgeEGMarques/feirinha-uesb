@@ -5,38 +5,31 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDAO {
 
     /**
      * Cria um novo usuário no banco de dados.
-     * Chamado pelo doPost() do Servlet.
+     * Mapeia os métodos do seu 'User.java' para as colunas do 'usuario'.
      */
     public void create(User user) throws SQLException {
-        // Usamos "public.usuario" para ter certeza,
-        // e os nomes das colunas do seu script SQL.
         String sql = "INSERT INTO public.usuario (cpf_usuario, nome_usuario, tel_usuario) VALUES (?, ?, ?)";
         
-        // try-with-resources garante que a conexão e o statement serão fechados.
-        // Ele chama o seu conector para pegar a conexão!
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            // Mapeia os dados do objeto User para os '?' do SQL
-            // user.getCpf() (do Java) -> coluna 1 (cpf_usuario)
             stmt.setString(1, user.getCpf());
-            // user.getNome() (do Java) -> coluna 2 (nome_usuario)
             stmt.setString(2, user.getNome());
-            // user.getTelefone() (do Java) -> coluna 3 (tel_usuario)
             stmt.setString(3, user.getTelefone());
             
-            stmt.executeUpdate(); // Executa o INSERT
+            stmt.executeUpdate();
         }
     }
 
     /**
      * Busca um usuário pelo CPF.
-     * (Você vai precisar disso para o doGet() em breve)
      */
     public User getByCpf(String cpf) throws SQLException {
         User user = null;
@@ -49,16 +42,70 @@ public class UserDAO {
             
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    // Mapeia o resultado do banco para um objeto Java
-                    user = new User();
-                    user.setCpf(rs.getString("cpf_usuario"));
-                    user.setNome(rs.getString("nome_usuario"));
-                    user.setTelefone(rs.getString("tel_usuario"));
+                    user = mapRowToUser(rs);
                 }
             }
         }
-        return user; // Retorna o usuário encontrado, ou null se não encontrar
+        return user;
     }
-    
-    // ... (Aqui você criaria os métodos update() e delete() depois) ...
+
+    /**
+     * Busca todos os usuários.
+     */
+    public List<User> getAll() throws SQLException {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM public.usuario";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                users.add(mapRowToUser(rs));
+            }
+        }
+        return users;
+    }
+
+    /**
+     * Atualiza um usuário.
+     */
+    public void update(User user) throws SQLException {
+        String sql = "UPDATE public.usuario SET nome_usuario = ?, tel_usuario = ? WHERE cpf_usuario = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, user.getNome());
+            stmt.setString(2, user.getTelefone());
+            stmt.setString(3, user.getCpf());
+            
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Deleta um usuário pelo CPF.
+     */
+    public void delete(String cpf) throws SQLException {
+        String sql = "DELETE FROM public.usuario WHERE cpf_usuario = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, cpf);
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Método Ajudante: Converte uma linha do SQL (ResultSet) para um objeto Java (User).
+     */
+    private User mapRowToUser(ResultSet rs) throws SQLException {
+        User user = new User();
+        user.setCpf(rs.getString("cpf_usuario"));
+        user.setNome(rs.getString("nome_usuario"));
+        user.setTelefone(rs.getString("tel_usuario"));
+        return user;
+    }
 }

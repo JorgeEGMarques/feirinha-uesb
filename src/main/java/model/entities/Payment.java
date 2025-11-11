@@ -7,12 +7,12 @@ public class Payment {
     private int saleId;
     private long reservationCode;
     private String buyerCpf;
-    private long tentCode;
+    private int tentCode;
     private String paymentForm;
     private LocalDate paymentDate;
 
     public Payment(){}
-    public Payment(int id, int saleId, long reservationCode, String buyerCpf, long tentCode, String paymentForm, LocalDate paymentDate){
+    public Payment(int id, int saleId, long reservationCode, String buyerCpf, int tentCode, String paymentForm, LocalDate paymentDate){
         this.id = id;
         this.saleId = saleId;
         this.reservationCode = reservationCode;
@@ -38,7 +38,7 @@ public class Payment {
         return buyerCpf;
     }
 
-    public long getTentCode(){
+    public int getTentCode(){
         return tentCode;
     }
 
@@ -49,4 +49,27 @@ public class Payment {
     public LocalDate getPaymentDate(){
         return paymentDate;
     }
+    public void setId(int id) {
+        this.id = id;
+    }
+    public void setSaleId(int saleId) {
+        this.saleId = saleId;
+    }
+    public void setReservationCode(long reservationCode) {
+        this.reservationCode = reservationCode;
+    }
+    public void setBuyerCpf(String buyerCpf) {
+        this.buyerCpf = buyerCpf;
+    }
+    public void setTentCode(int tentCode) {
+        this.tentCode = tentCode;
+    }
+    public void setPaymentForm(String paymentForm) {
+        this.paymentForm = paymentForm;
+    }
+    public void setPaymentDate(LocalDate paymentDate) {
+        this.paymentDate = paymentDate;
+    }
+    
+    
 }

@@ -13,7 +13,7 @@ import dao.UserDAO; // 1. IMPORTE O SEU NOVO DAO
 import java.io.IOException;
 import java.sql.SQLException; // 2. IMPORTE A EXCEÇÃO DO SQL
 
-@WebServlet(urlPatterns = {"/api/usuarios", "/api/usuarios/*"}) // Já corrigido!
+@WebServlet(urlPatterns = {"/api/usuarios", "/api/usuarios/*"}) 
 public class UserServlet extends HttpServlet {
 
     private ObjectMapper mapper = new ObjectMapper();
