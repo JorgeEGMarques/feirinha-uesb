@@ -4,12 +4,14 @@ public class Tent {
     private int code;
     private String cpfHolder;
     private String name;
+    private byte[] userLicense;
 
     public Tent(){}
-    public Tent(int code, String cpfHolder, String name){
+    public Tent(int code, String cpfHolder, String name, byte[] userLicense){
         this.code = code;
         this.cpfHolder = cpfHolder;
         this.name = name;
+        this.userLicense = userLicense;
     }
 
     public int getCode(){
@@ -22,6 +24,14 @@ public class Tent {
 
     public String getName(){
         return name;
+    }
+
+    public byte[] getUserLicense(){
+        return userLicense;
+    }
+
+    public void setUserLicense(byte[] userLicense){
+        this.userLicense = userLicense;
     }
     public void setCode(int code) {
         this.code = code;

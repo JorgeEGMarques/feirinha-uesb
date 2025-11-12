@@ -3,24 +3,24 @@ package model.entities;
 import java.math.BigDecimal;
 
 public class ReservationItem {
-    private Long reservationCode;
-    private Long productCode;
+    private int reservationCode;
+    private int productCode;
     private short reservationItemQuantity;
     private BigDecimal reservationPrice;
     
     public ReservationItem(){}
-    public ReservationItem(Long reservationCode, Long productCode, short reservationItemQuantity, BigDecimal reservationPrice){
+    public ReservationItem(int reservationCode, int productCode, short reservationItemQuantity, BigDecimal reservationPrice){
         this.reservationCode = reservationCode;
         this.productCode = productCode;
         this.reservationItemQuantity = reservationItemQuantity;
         this.reservationPrice = reservationPrice;
     }
 
-    public Long getReservationCode(){
+    public int getReservationCode(){
         return reservationCode;
     }
 
-    public Long getProductCode(){
+    public int getProductCode(){
         return productCode;
     }
 
@@ -31,4 +31,18 @@ public class ReservationItem {
     public BigDecimal getReservationPrice(){
         return reservationPrice;
     }
+    public void setReservationCode(int reservationCode) {
+        this.reservationCode = reservationCode;
+    }
+    public void setProductCode(int productCode) {
+        this.productCode = productCode;
+    }
+    public void setReservationItemQuantity(short reservationItemQuantity) {
+        this.reservationItemQuantity = reservationItemQuantity;
+    }
+    public void setReservationPrice(BigDecimal reservationPrice) {
+        this.reservationPrice = reservationPrice;
+    }
+
+    
 }

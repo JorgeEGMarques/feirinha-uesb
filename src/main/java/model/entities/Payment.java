@@ -8,7 +8,7 @@ public class Payment {
     // --- MUDANÇAS AQUI ---
     // Colunas que podem ser NULAS (referências) devem ser Objetos
     private Integer saleId; 
-    private Long reservationCode; 
+    private Integer reservationCode; 
     // --- FIM DAS MUDANÇAS ---
 
     private String buyerCpf;
@@ -19,7 +19,7 @@ public class Payment {
     public Payment(){}
     
     // (O construtor também muda)
-    public Payment(int id, Integer saleId, Long reservationCode, String buyerCpf, int tentCode, String paymentForm, LocalDate paymentDate){
+    public Payment(int id, Integer saleId, Integer reservationCode, String buyerCpf, int tentCode, String paymentForm, LocalDate paymentDate){
         this.id = id;
         this.saleId = saleId;
         this.reservationCode = reservationCode;
@@ -37,7 +37,7 @@ public class Payment {
     public Integer getSaleId(){
         return saleId;
     }
-    public Long getReservationCode(){
+    public Integer getReservationCode(){
         return reservationCode;
     }
     // --- FIM DAS MUDANÇAS ---
@@ -66,7 +66,7 @@ public class Payment {
     public void setSaleId(Integer saleId) {
         this.saleId = saleId;
     }
-    public void setReservationCode(Long reservationCode) {
+    public void setReservationCode(Integer reservationCode) {
         this.reservationCode = reservationCode;
     }
     // --- FIM DAS MUDANÇAS ---

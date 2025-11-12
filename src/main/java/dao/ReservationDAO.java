@@ -1,12 +1,12 @@
 package dao;
 
 import model.entities.Reservation;
-import model.entities.ReservationItem; // Importe o Item
+import model.entities.ReservationItem;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement; // Importe para pegar o ID gerado
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,15 +15,10 @@ public class ReservationDAO {
 
     /**
      * Cria uma nova RESERVA e seus ITENS em uma única transação.
-     * Isso usa a lógica de Transação que eu te mostrei antes.
      */
     public void create(Reservation reservation) throws SQLException {
         
-        // 1. SQL CORRETO para a tabela 'reserva'
-        // Note que o 'cod_reserva' (serial) não está aqui, pois o banco o gera.
         String sqlReserva = "INSERT INTO public.reserva (cpf_titular, data_reserva, status_reserva) VALUES (?, ?, ?)";
-        
-        // 2. SQL CORRETO para a tabela 'item_reserva'
         String sqlItem = "INSERT INTO public.item_reserva (cod_res, cod_prod, qntd_item_reserva, preco_reserva) VALUES (?, ?, ?, ?)";
 
         Connection conn = null;
@@ -32,31 +27,26 @@ public class ReservationDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-            
-            // --- INÍCIO DA TRANSAÇÃO ---
-            conn.setAutoCommit(false); // Desliga o Auto-Commit
+            conn.setAutoCommit(false); // Inicia a transação
 
             // --- PASSO 1: Salvar a Reserva (Pai) ---
-            // Pedimos ao JDBC para nos retornar a chave gerada (o 'cod_reserva')
             stmtReserva = conn.prepareStatement(sqlReserva, Statement.RETURN_GENERATED_KEYS);
             
-            // Mapeamento correto dos parâmetros (agora com índices corretos)
             stmtReserva.setString(1, reservation.getHolderCpf());
             stmtReserva.setObject(2, reservation.getReservationDate());
-            stmtReserva.setString(3, reservation.getStatus()); // Usa o novo campo 'status'
+            stmtReserva.setString(3, reservation.getStatus());
             
             int rowsAffected = stmtReserva.executeUpdate();
-            
             if (rowsAffected == 0) {
                 throw new SQLException("Falha ao criar reserva, nenhuma linha afetada.");
             }
 
-            // --- PASSO 2: Pegar o ID da Reserva que acabou de ser criada ---
+            // --- PASSO 2: Pegar o ID (serial) da Reserva criada ---
             long newReservationId = -1;
             try (ResultSet generatedKeys = stmtReserva.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     newReservationId = generatedKeys.getLong(1);
-                    // Atualiza o objeto Java com o novo ID gerado pelo banco
+                    // Atualiza o objeto Java com o ID do banco
                     reservation.setCode((int) newReservationId); 
                 } else {
                     throw new SQLException("Falha ao criar reserva, não obteve o ID.");
@@ -64,36 +54,33 @@ public class ReservationDAO {
             }
 
             // --- PASSO 3: Salvar os Itens (Filhos) ---
-            // Verifica se a lista de itens não é nula e não está vazia
             if (reservation.getItems() != null && !reservation.getItems().isEmpty()) {
                 
                 stmtItem = conn.prepareStatement(sqlItem);
                 
                 for (ReservationItem item : reservation.getItems()) {
-                    stmtItem.setLong(1, newReservationId); // Usa o ID do Pai
-                    stmtItem.setLong(2, item.getProductCode());
+                    stmtItem.setInt(1, (int) newReservationId); // Usa o ID do Pai (cod_res é INT)
+                    // CORREÇÃO: Modelo ReservationItem usa 'int', não 'long'
+                    stmtItem.setInt(2, item.getProductCode()); 
                     stmtItem.setShort(3, item.getReservationitemQuantity());
                     stmtItem.setBigDecimal(4, item.getReservationPrice());
-                    stmtItem.addBatch(); // Adiciona o INSERT ao "lote"
+                    stmtItem.addBatch();
                 }
-                stmtItem.executeBatch(); // Executa todos os INSERTs dos itens de uma vez
+                stmtItem.executeBatch();
             }
 
-            // --- FIM DA TRANSAÇÃO ---
-            conn.commit(); // Se tudo deu certo, COMITA (salva permanentemente)
+            conn.commit(); // Salva permanentemente
             
         } catch (SQLException e) {
             if (conn != null) {
-                conn.rollback(); // Se deu erro, DESFAZ TUDO (rollback)
+                conn.rollback(); // Desfaz tudo
             }
-            // Re-lança o erro para o Servlet saber que falhou
             throw new SQLException("Erro de transação ao salvar reserva: " + e.getMessage(), e);
         } finally {
-            // Fecha tudo na ordem inversa
             if (stmtItem != null) stmtItem.close();
             if (stmtReserva != null) stmtReserva.close();
             if (conn != null) {
-                conn.setAutoCommit(true); // Devolve a conexão ao normal
+                conn.setAutoCommit(true);
                 conn.close();
             }
         }
@@ -107,7 +94,6 @@ public class ReservationDAO {
         String sqlReserva = "SELECT * FROM public.reserva WHERE cod_reserva = ?";
         String sqlItems = "SELECT * FROM public.item_reserva WHERE cod_res = ?";
 
-        // Usamos um único try-with-resources para a conexão e os dois statements
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmtReserva = conn.prepareStatement(sqlReserva);
              PreparedStatement stmtItems = conn.prepareStatement(sqlItems)) {
@@ -116,25 +102,98 @@ public class ReservationDAO {
             stmtReserva.setInt(1, code);
             try (ResultSet rs = stmtReserva.executeQuery()) {
                 if (rs.next()) {
-                    reservation = mapRowToReservation(rs); // Usa o método ajudante
+                    reservation = mapRowToReservation(rs);
                 }
             }
             
             // --- PASSO 2: Buscar os Itens (Filhos) ---
-            // Se encontramos a reserva, buscamos seus itens
             if (reservation != null) {
                 stmtItems.setInt(1, code);
                 List<ReservationItem> items = new ArrayList<>();
                 
-                /*try (ResultSet rsItems = stmtItems.executeQuery()) {
+                // CORREÇÃO: Bloco estava comentado
+                try (ResultSet rsItems = stmtItems.executeQuery()) {
                     while (rsItems.next()) {
-                        items.add(mapRowToItem(rsItems)); // Usa o novo ajudante de item
+                        items.add(mapRowToItem(rsItems)); 
                     }
-                }*/
-                reservation.setItems(items); // Adiciona a lista de itens ao objeto
+                }
+                reservation.setItems(items);
             }
         }
-        return reservation; // Retorna a reserva completa (com itens), ou null
+        return reservation;
+    }
+
+    public List<Reservation> getAll() throws SQLException {
+        List<Reservation> reservations = new ArrayList<>();
+        String sql = "SELECT * FROM public.reserva";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                reservations.add(mapRowToReservation(rs));
+            }
+        }
+        return reservations;
+    }
+
+    /**
+     * Atualiza APENAS o status de uma reserva.
+     */
+    public void updateStatus(int reservationId, String newStatus) throws SQLException {
+        // CORREÇÃO: SQL e parâmetros estavam errados
+        String sql = "UPDATE public.reserva SET status_reserva = ? WHERE cod_reserva = ?";
+        
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, newStatus);
+        
+            stmt.setInt(2, reservationId);
+            
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Deleta uma reserva e seus itens (precisa de transação).
+     */
+    public void delete(int code) throws SQLException { // CORREÇÃO: Era 'String code'
+        String sqlItems = "DELETE FROM public.item_reserva WHERE cod_res = ?";
+        String sqlReserva = "DELETE FROM public.reserva WHERE cod_reserva = ?";
+        
+        Connection conn = null;
+        PreparedStatement stmtItems = null;
+        PreparedStatement stmtReserva = null;
+        
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false); // Inicia transação
+
+            // 1. Deleta os "Filhos" (item_reserva)
+            stmtItems = conn.prepareStatement(sqlItems);
+            stmtItems.setInt(1, code);
+            stmtItems.executeUpdate();
+
+            // 2. Deleta o "Pai" (reserva)
+            stmtReserva = conn.prepareStatement(sqlReserva);
+            stmtReserva.setInt(1, code); // CORREÇÃO: Era 'setString'
+            stmtReserva.executeUpdate();
+            
+            conn.commit(); // Salva
+            
+        } catch (SQLException e) {
+            if (conn != null) conn.rollback(); // Desfaz
+            throw new SQLException("Erro de transação ao deletar reserva: " + e.getMessage(), e);
+        } finally {
+            if (stmtItems != null) stmtItems.close();
+            if (stmtReserva != null) stmtReserva.close();
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        }
     }
 
     // --- MÉTODO AJUDANTE (PAI) ---
@@ -147,14 +206,14 @@ public class ReservationDAO {
         return r;
     }
     
-    /*  --- MÉTODO AJUDANTE (FILHO) ---
-    // (Presume que você tem a classe ReservationItem.java com os setters corretos)
+    // --- MÉTODO AJUDANTE (FILHO) ---
     private ReservationItem mapRowToItem(ResultSet rs) throws SQLException {
         ReservationItem item = new ReservationItem();
-        item.setReservationCode(rs.getLong("cod_res"));
-        item.setProductCode(rs.getLong("cod_prod"));
-        item.setReservationitemQuantity(rs.getShort("qntd_item_reserva"));
+        // CORREÇÃO: Tipos no modelo são 'int'
+        item.setReservationCode(rs.getInt("cod_res"));
+        item.setProductCode(rs.getInt("cod_prod"));
+        item.setReservationItemQuantity(rs.getShort("qntd_item_reserva"));
         item.setReservationPrice(rs.getBigDecimal("preco_reserva"));
         return item;
-    }*/
+    }
 }

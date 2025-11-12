@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.math.BigDecimal; // Importe BigDecimal
 
 public class SaleDAO {
 
@@ -18,10 +19,7 @@ public class SaleDAO {
      */
     public void create(Sale sale) throws SQLException {
         
-        // 1. SQL CORRETO para a tabela 'venda' (4 parâmetros)
         String sqlSale = "INSERT INTO public.venda (id_venda, data_venda, cod_barraca, cod_usuario) VALUES (?, ?, ?, ?)";
-        
-        // 2. SQL CORRETO para a tabela 'item_venda' (4 parâmetros)
         String sqlItem = "INSERT INTO public.item_venda (cod_prod, id_venda, qntd_venda, preco_venda) VALUES (?, ?, ?, ?)";
 
         Connection conn = null;
@@ -30,24 +28,20 @@ public class SaleDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-            
-            // --- INÍCIO DA TRANSAÇÃO ---
-            conn.setAutoCommit(false); // Desliga o Auto-Commit
+            conn.setAutoCommit(false); // Inicia transação
 
             // --- PASSO 1: Salvar a Venda (Pai) ---
             stmtSale = conn.prepareStatement(sqlSale);
             
-            // Mapeamento CORRETO dos 4 parâmetros
-            stmtSale.setInt(1, sale.getId()); // Pega o ID que veio do JSON
+            stmtSale.setInt(1, sale.getId());
             stmtSale.setObject(2, sale.getSaleDate());
             stmtSale.setInt(3, sale.getTentCode());
-            stmtSale.setString(4, sale.getUserCode()); // 'String userCode' (Java) -> 'char(11) cod_usuario' (SQL)
+            stmtSale.setString(4, sale.getUserCode()); // Modelo usa String, SQL usa char(11). Correto.
             
             int rowsAffected = stmtSale.executeUpdate();
             if (rowsAffected == 0) {
                 throw new SQLException("Falha ao criar venda, nenhuma linha afetada.");
             }
-            // Não precisamos de "RETURN_GENERATED_KEYS" aqui, pois o ID foi fornecido.
 
             // --- PASSO 2: Salvar os Itens (Filhos) ---
             if (sale.getItems() != null && !sale.getItems().isEmpty()) {
@@ -55,30 +49,27 @@ public class SaleDAO {
                 stmtItem = conn.prepareStatement(sqlItem);
                 
                 for (SaleItem item : sale.getItems()) {
-                    // Mapeamento CORRETO dos 4 parâmetros do item
                     stmtItem.setInt(1, item.getProductCode());
                     stmtItem.setInt(2, sale.getId()); // Usa o ID do Pai
                     stmtItem.setShort(3, item.getSaleQuantity());
                     stmtItem.setBigDecimal(4, item.getSalePrice());
-                    stmtItem.addBatch(); // Adiciona o INSERT ao "lote"
+                    stmtItem.addBatch();
                 }
-                stmtItem.executeBatch(); // Executa todos os INSERTs dos itens de uma vez
+                stmtItem.executeBatch();
             }
 
-            // --- FIM DA TRANSAÇÃO ---
-            conn.commit(); // Se tudo deu certo, COMITA
+            conn.commit(); // Salva
             
         } catch (SQLException e) {
             if (conn != null) {
-                conn.rollback(); // Se deu erro, DESFAZ TUDO
+                conn.rollback(); // Desfaz
             }
             throw new SQLException("Erro de transação ao salvar Venda: " + e.getMessage(), e);
         } finally {
-            // Fecha tudo
             if (stmtItem != null) stmtItem.close();
             if (stmtSale != null) stmtSale.close();
             if (conn != null) {
-                conn.setAutoCommit(true); // Devolve a conexão ao normal
+                conn.setAutoCommit(true);
                 conn.close();
             }
         }
@@ -100,7 +91,7 @@ public class SaleDAO {
             stmtSale.setInt(1, id);
             try (ResultSet rs = stmtSale.executeQuery()) {
                 if (rs.next()) {
-                    sale = mapRowToSale(rs); // Usa o ajudante
+                    sale = mapRowToSale(rs);
                 }
             }
             
@@ -109,15 +100,16 @@ public class SaleDAO {
                 stmtItems.setInt(1, id);
                 List<SaleItem> items = new ArrayList<>();
                 
+                // CORREÇÃO: Bloco estava faltando
                 try (ResultSet rsItems = stmtItems.executeQuery()) {
                     while (rsItems.next()) {
-                        items.add(mapRowToSaleItem(rsItems)); // Usa o novo ajudante
+                        items.add(mapRowToSaleItem(rsItems)); 
                     }
                 }
-                sale.setItems(items); // Adiciona a lista de itens ao objeto
+                sale.setItems(items);
             }
         }
-        return sale; // Retorna a Venda completa (com itens), ou null
+        return sale;
     }
 
     /**
@@ -138,30 +130,63 @@ public class SaleDAO {
         return sales;
     }
     
+    /**
+     * Deleta uma venda e seus itens (precisa de transação).
+     */
+    public void delete(int id) throws SQLException { // CORREÇÃO: Era 'String id'
+        String sqlItems = "DELETE FROM public.item_venda WHERE id_venda = ?";
+        String sqlSale = "DELETE FROM public.venda WHERE id_venda = ?";
+        
+        Connection conn = null;
+        PreparedStatement stmtItems = null;
+        PreparedStatement stmtSale = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false); // Inicia transação
+
+            // 1. Deleta os "Filhos" (item_venda)
+            stmtItems = conn.prepareStatement(sqlItems);
+            stmtItems.setInt(1, id);
+            stmtItems.executeUpdate();
+
+            // 2. Deleta o "Pai" (venda)
+            stmtSale = conn.prepareStatement(sqlSale);
+            stmtSale.setInt(1, id); // CORREÇÃO: Era 'setString'
+            stmtSale.executeUpdate();
+            
+            conn.commit(); // Salva
+            
+        } catch (SQLException e) {
+            if (conn != null) conn.rollback(); // Desfaz
+            throw new SQLException("Erro de transação ao deletar venda: " + e.getMessage(), e);
+        } finally {
+            if (stmtItems != null) stmtItems.close();
+            if (stmtSale != null) stmtSale.close();
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        }
+    }
+    
     // --- MÉTODO AJUDANTE (PAI) ---
-    // Agora usa Setters, pois Sale.java foi corrigido!
     private Sale mapRowToSale(ResultSet rs) throws SQLException {
         Sale sale = new Sale();
         sale.setId(rs.getInt("id_venda"));
         sale.setSaleDate(rs.getObject("data_venda", LocalDate.class));
         sale.setTentCode(rs.getInt("cod_barraca"));
-        sale.setUserCode(rs.getString("cod_usuario")); // 'char(11)' (SQL) -> 'String' (Java)
+        sale.setUserCode(rs.getString("cod_usuario"));
         return sale;
     }
 
     // --- MÉTODO AJUDANTE (FILHO) ---
-    // (Presume que SaleItem.java tem setters, ou um construtor que bate)
     private SaleItem mapRowToSaleItem(ResultSet rs) throws SQLException {
         SaleItem item = new SaleItem();
-        
-        // (Assumindo que SaleItem.java tem os setters abaixo)
         item.setProductCode(rs.getInt("cod_prod"));
         item.setSaleId(rs.getInt("id_venda"));
         item.setSaleQuantity(rs.getShort("qntd_venda"));
         item.setSalePrice(rs.getBigDecimal("preco_venda"));
-        
         return item;
     }
-    
-    // ... (Implementar update e delete se necessário) ...
 }
