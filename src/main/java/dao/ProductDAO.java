@@ -1,7 +1,6 @@
 package dao;
 
 import model.entities.Product;
-import java.math.BigDecimal; // Importe o BigDecimal
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

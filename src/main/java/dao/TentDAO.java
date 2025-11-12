@@ -1,5 +1,6 @@
 package dao;
 
+import model.entities.Stock;
 import model.entities.Tent; // Importa seu modelo
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -54,6 +55,24 @@ public class TentDAO {
         t.setName(rs.getString("nome_barraca"));
         
         return t;
+    }
+
+    // Este método vai INSERIR o estoque se não existir, ou ATUALIZAR se já existir.
+    public void updateStock(Stock stockItem) throws SQLException {
+        // O comando "ON CONFLICT ... DO UPDATE" é o "UPSERT" do PostgreSQL
+        String sql = "INSERT INTO public.estoque (cod_prod, cod_barraca, qntd_estoque) " +
+                    "VALUES (?, ?, ?) " +
+                    "ON CONFLICT (cod_prod, cod_barraca) DO UPDATE SET qntd_estoque = EXCLUDED.qntd_estoque";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setLong(1, stockItem.getProductCode());
+            stmt.setLong(2, stockItem.getTentCode());
+            stmt.setShort(3, stockItem.getStockQuantity());
+
+            stmt.executeUpdate();
+        }
     }
     
     // ... (Aqui você criaria os métodos update() e delete() depois) ...

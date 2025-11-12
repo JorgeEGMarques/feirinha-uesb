@@ -3,20 +3,20 @@ package model.entities;
 import java.math.BigDecimal;
 
 public class SaleItem {
-    private long productCode;
+    private int productCode;
     private int saleId;
     private short saleQuantity;
     private BigDecimal salePrice;
 
     public SaleItem(){}
-    public SaleItem(long productCode, int saleId, short saleQuantity, BigDecimal salePrice){
+    public SaleItem(int productCode, int saleId, short saleQuantity, BigDecimal salePrice){
         this.productCode = productCode;
         this.saleId = saleId;
         this.saleQuantity = saleQuantity;
         this.salePrice = salePrice;
     }
 
-    public long getProductCode(){
+    public int getProductCode(){
         return productCode;
     }
 
@@ -31,4 +31,18 @@ public class SaleItem {
     public BigDecimal getSalePrice(){
         return salePrice;
     }
+    public void setProductCode(int productCode) {
+        this.productCode = productCode;
+    }
+    public void setSaleId(int saleId) {
+        this.saleId = saleId;
+    }
+    public void setSaleQuantity(short saleQuantity) {
+        this.saleQuantity = saleQuantity;
+    }
+    public void setSalePrice(BigDecimal salePrice) {
+        this.salePrice = salePrice;
+    }
+
+    
 }
