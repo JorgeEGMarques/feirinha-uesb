@@ -8,14 +8,13 @@ public class DatabaseConnection {
 
     // --- CONFIGURE SEUS DADOS AQUI ---
     
-    // 1. Altere "feirinha_db" para o nome exato do banco que você criou
-    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/db_feirinha"; 
+    private static final String JDBC_URL = ""; 
     
     // 2. Coloque o usuário do seu Postgres (o padrão é "postgres")
-    private static final String JDBC_USER = "sampaio"; 
+    private static final String JDBC_USER = ""; 
     
     // 3. Coloque a senha que você definiu ao instalar o Postgres
-    private static final String JDBC_PASSWORD = "12345"; // <-- MUDE ISSO
+    private static final String JDBC_PASSWORD = ""; // <-- MUDE ISSO
     
     // --- FIM DA CONFIGURAÇÃO ---
 

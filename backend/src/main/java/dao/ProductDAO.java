@@ -1,10 +1,11 @@
 package dao;
 
-import model.entities.Product; // Importa seu modelo
+import model.entities.Product; 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,22 +13,37 @@ public class ProductDAO {
 
     // C - CREATE (do doPost)
     // Note que usamos o seu construtor, que espera um 'long'
-    public void create(Product product) throws SQLException {
-        String sql = "INSERT INTO produto (cod_produto, nome_produto, preco_produto, descricao_produto) VALUES (?, ?, ?, ?)";
-        
-        // O try-with-resources fecha a conexão e o statement para você
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            // "Hidrata" o SQL com os dados do objeto
-            stmt.setLong(1, product.getCode()); // Assumindo que o código é 'long'
-            stmt.setString(2, product.getName());
-            stmt.setBigDecimal(3, product.getPrice()); // Use setBigDecimal para 'Numeric'
-            stmt.setString(4, product.getDescription());
-            
-            stmt.executeUpdate(); // Executa o INSERT
-        }
-    }
+    public Product create(Product product) throws SQLException {
+    // 1. Remova "cod_produto" do INSERT
+         String sql = "INSERT INTO produto (nome_produto, preco_produto, descricao_produto) VALUES (?, ?, ?)";
+
+         // 2. Adicione Statement.RETURN_GENERATED_KEYS
+         try (Connection conn = DatabaseConnection.getConnection();
+              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+             // 3. Ajuste os índices dos parâmetros
+             stmt.setString(1, product.getName());
+             stmt.setBigDecimal(2, product.getPrice());
+             stmt.setString(3, product.getDescription());
+
+             int affectedRows = stmt.executeUpdate();
+             
+             if (affectedRows == 0) {
+                 throw new SQLException("Falha ao criar produto, nenhuma linha afetada.");
+             }
+
+             // 4. Recupere o ID gerado
+             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                 if (generatedKeys.next()) {
+                     // 5. Defina o ID no objeto e retorne-o
+                     product.setCode(generatedKeys.getLong(1));
+                     return product; 
+                 } else {
+                     throw new SQLException("Falha ao criar produto, nenhum ID obtido.");
+                 }
+             }
+         }
+     }
 
     // R - READ (do doGet - Buscar todos)
     public List<Product> getAll() throws SQLException {

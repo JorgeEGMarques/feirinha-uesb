@@ -23,12 +23,15 @@ public class ProductServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         try {
-            Product newProduct = mapper.readValue(req.getReader(), Product.class);
-            productDAO.create(newProduct);
-
+            Product productToCreate = mapper.readValue(req.getReader(), Product.class);
+            
+            // 1. Capture o produto retornado pelo DAO (agora com ID)
+            Product createdProduct = productDAO.create(productToCreate);
             resp.setContentType("application/json");
             resp.setStatus(HttpServletResponse.SC_CREATED);
-            resp.getWriter().write(mapper.writeValueAsString(newProduct));
+            
+            // 2. Envie o produto com o ID gerado de volta para o frontend
+            resp.getWriter().write(mapper.writeValueAsString(createdProduct));
         } catch (SQLException e) {
             e.printStackTrace();
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
