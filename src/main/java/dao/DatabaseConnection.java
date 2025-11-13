@@ -8,7 +8,6 @@ public class DatabaseConnection {
 
     // --- CONFIGURE SEUS DADOS AQUI ---
     
-    // 1. Altere "feirinha_db" para o nome exato do banco que você criou
     private static final String JDBC_URL = ""; 
     
     // 2. Coloque o usuário do seu Postgres (o padrão é "postgres")

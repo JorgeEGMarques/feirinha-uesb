@@ -3,23 +3,19 @@ package controller;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
 import dao.ProductDAO;
-import model.entities.Product;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import model.entities.Product;
 
 import java.io.IOException;
 import java.math.BigDecimal; 
 import java.sql.SQLException;
 import java.util.List;
 
-// ATENÇÃO: A anotação DEVE ser a do seu outro Servlet (ProductServlet)
-// Eu mudei para bater com o padrão de rota dos outros.
 @WebServlet(urlPatterns = {"/api/products", "/api/products/*"})
 public class ProductServlet extends HttpServlet {
 
@@ -33,6 +29,15 @@ public class ProductServlet extends HttpServlet {
         this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.productDAO = new ProductDAO(); // DAO é inicializado
     }
+    
+    // Método ajudante para enviar erros
+    private void sendError(HttpServletResponse resp, int statusCode, String message) throws IOException {
+        resp.setStatus(statusCode);
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+        resp.getWriter().print("{\"erro\": \"" + message + "\"}");
+    }
+
 
     // --- CREATE (Criar) ---
     // POST /api/products
@@ -43,37 +48,50 @@ public class ProductServlet extends HttpServlet {
         try {
             Product newProduct = mapper.readValue(jsonBody, Product.class);
             
-            // Validação (Barreira 1) - O Servlet protege o DAO
-            if (newProduct.getName() == null || newProduct.getPrice() == null) {
-                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400
-                 resp.getWriter().print("{\"erro\": \"Nome e preço são obrigatórios.\"}");
+            // --- VALIDAÇÃO (BARREIRA 1) ---
+            
+            // CORREÇÃO: Remova a validação do ID.
+            // O banco de dados agora gera o ID, então o 'code' do JSON será 0 (padrão)
+            // e isso é esperado.
+            /* if (newProduct.getCode() == 0) {
+                 sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'code' (cod_produto) é obrigatório.");
+                 return;
+            }
+            */
+
+            if (newProduct.getName() == null || newProduct.getName().trim().isEmpty()) {
+                 sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'name' (nome_produto) é obrigatório.");
+                 return;
+            }
+            if (newProduct.getPrice() == null) {
+                 sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'price' (preco_produto) é obrigatório.");
                  return;
             }
             if (newProduct.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400
-                resp.getWriter().print("{\"erro\": \"O preço deve ser maior que zero.\"}");
+                sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'price' (preco_produto) deve ser maior que zero.");
                 return;
             }
+            // --- FIM DA VALIDAÇÃO ---
+
 
             // --- LÓGICA DO BANCO (ATIVA) ---
+            // O DAO agora vai preencher o ID do newProduct
             productDAO.create(newProduct); 
 
-            // --- FIM DA LÓGICA DO BANCO ---
             
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
             resp.setStatus(HttpServletResponse.SC_CREATED); // 201
             
+            // Envia o produto de volta, agora com o ID que o banco gerou
             String jsonResposta = mapper.writeValueAsString(newProduct);
             resp.getWriter().print(jsonResposta);
 
         } catch (SQLException e) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); 
-            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro de Banco de Dados: " + e.getMessage());
             e.printStackTrace();
         } catch (Exception e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); 
-            resp.getWriter().print("{\"erro\": \"JSON inválido. " + e.getMessage() + "\"}");
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "JSON inválido: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -84,7 +102,7 @@ public class ProductServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         
-        String pathInfo = req.getPathInfo(); // Pega o que vem depois de "/api/products"
+        String pathInfo = req.getPathInfo();
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
@@ -96,28 +114,20 @@ public class ProductServlet extends HttpServlet {
             
             } else {
                 // --- Rota 2: Buscar Um por ID (/api/products/1) ---
-                
-                // Extrai o "1" da URL "/1"
                 int id = Integer.parseInt(pathInfo.substring(1));
                 Product product = productDAO.getById(id);
                 
                 if (product == null) {
-                    // Não encontrou
-                    resp.setStatus(HttpServletResponse.SC_NOT_FOUND); // 404
-                    resp.getWriter().print("{\"erro\": \"Produto não encontrado\"}");
+                    sendError(resp, HttpServletResponse.SC_NOT_FOUND, "Produto não encontrado.");
                 } else {
-                    // Encontrou, retorna o produto
                     resp.setStatus(HttpServletResponse.SC_OK); // 200
                     resp.getWriter().print(mapper.writeValueAsString(product));
                 }
             }
         } catch (NumberFormatException e) {
-            // Se a URL for /api/products/abc (inválido)
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().print("{\"erro\": \"ID de produto inválido.\"}");
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "ID de produto inválido.");
         } catch (SQLException e) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro de Banco de Dados: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -128,10 +138,8 @@ public class ProductServlet extends HttpServlet {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String pathInfo = req.getPathInfo();
         
-        // 1. PUT precisa de um ID na URL
         if (pathInfo == null || pathInfo.equals("/")) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().print("{\"erro\": \"É preciso informar o ID do produto na URL para atualizar.\"}");
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "É preciso informar o ID do produto na URL para atualizar.");
             return;
         }
 
@@ -140,30 +148,24 @@ public class ProductServlet extends HttpServlet {
             String jsonBody = req.getReader().lines().reduce("", (a, b) -> a + b);
             
             Product product = mapper.readValue(jsonBody, Product.class);
-            
-            // 2. Garante que o ID do objeto é o mesmo da URL
             product.setCode(id); 
             
-            // 3. (Validação, igual ao POST - opcional mas recomendado)
+            // (Validações do POST também deveriam estar aqui)
             
-            // 4. Chama o DAO
             productDAO.update(product);
             
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
             resp.setStatus(HttpServletResponse.SC_OK); // 200
-            resp.getWriter().print(mapper.writeValueAsString(product)); // Retorna o objeto atualizado
+            resp.getWriter().print(mapper.writeValueAsString(product));
             
         } catch (NumberFormatException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().print("{\"erro\": \"ID de produto inválido.\"}");
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "ID de produto inválido.");
         } catch (SQLException e) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro de Banco de Dados: " + e.getMessage());
             e.printStackTrace();
         } catch (Exception e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().print("{\"erro\": \"JSON inválido. " + e.getMessage() + "\"}");
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "JSON inválido: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -175,26 +177,19 @@ public class ProductServlet extends HttpServlet {
         String pathInfo = req.getPathInfo();
         
         if (pathInfo == null || pathInfo.equals("/")) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().print("{\"erro\": \"É preciso informar o ID do produto na URL para deletar.\"}");
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "É preciso informar o ID do produto na URL para deletar.");
             return;
         }
 
         try {
             int id = Integer.parseInt(pathInfo.substring(1));
-            
-            // Chama o DAO
             productDAO.delete(id);
-            
-            // Resposta de Delete não tem corpo (corpo vazio)
             resp.setStatus(HttpServletResponse.SC_NO_CONTENT); // 204
             
         } catch (NumberFormatException e) {
-            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            resp.getWriter().print("{\"erro\": \"ID de produto inválido.\"}");
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "ID de produto inválido.");
         } catch (SQLException e) {
-            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erro de Banco de Dados: " + e.getMessage());
             e.printStackTrace();
         }
     }

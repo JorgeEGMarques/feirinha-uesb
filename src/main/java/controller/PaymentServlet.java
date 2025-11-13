@@ -6,16 +6,17 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import dao.PaymentDAO;
+import model.entities.Payment;
+
 // Imports do Servlet (JAKARTA)
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import model.entities.Payment;
-import dao.PaymentDAO; 
-import java.sql.SQLException; // Importe, pois você vai precisar
 
+import java.sql.SQLException;
+import java.util.List;
 import java.io.IOException;
 
 @WebServlet(urlPatterns = {"/api/payments", "/api/payments/*"}) // URL em português
@@ -24,61 +25,171 @@ public class PaymentServlet extends HttpServlet {
     private ObjectMapper mapper; // 1. Mova a inicialização para o init()
     private PaymentDAO paymentDAO;
 
-    @Override // 2. Assinatura correta do init()
+    @Override
     public void init() throws ServletException {
-        
-        // 3. Crie e configure o mapper AQUI
         this.mapper = new ObjectMapper();
-        
-        // Ensina o mapper a ler/escrever java.time.LocalDate
         this.mapper.registerModule(new JavaTimeModule()); 
-        
-        // Diz ao mapper para não falhar se o JSON tiver campos a mais
         this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        // 4. REMOVEMOS A LINHA DO ERRO DAQUI
-        
-        // Inicialize seu DAO
-        this.paymentDAO = new PaymentDAO();
+        this.paymentDAO = new PaymentDAO(); // DAO é inicializado
     }
 
+    // --- CREATE (Criar) ---
+    // POST /api/payments
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        
         String jsonBody = req.getReader().lines().reduce("", (a, b) -> a + b);
 
         try {
-            // 5. Agora o mapper.readValue usará o mapper configurado
             Payment newPayment = mapper.readValue(jsonBody, Payment.class);
             
-            // --- LÓGICA DO BANCO DE DADOS (VAI SER O PRÓXIMO PASSO) ---
-            
-            // (Descomente esta linha quando estiver pronto)
-            // 1. DESCOMENTE A LINHA ABAIXO PARA SALVAR NO BANCO
+            // Validação (Barreira 1) - O Servlet protege o DAO
+            if (newPayment.getId() == null || newPayment.getBuyerCpf() == null || newPayment.getPaymentForm() == null || newPayment.getPaymentDate() == null) {
+                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400
+                 resp.getWriter().print("{\"erro\": \"Falta de campos obrigatórios.\"}");
+                 return;
+            }
+
+            // --- LÓGICA DO BANCO (ATIVA) ---
             paymentDAO.create(newPayment); 
 
             // --- FIM DA LÓGICA DO BANCO ---
             
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_CREATED);
+            resp.setStatus(HttpServletResponse.SC_CREATED); // 201
             
-            // 6. Envie a resposta UMA VEZ
             String jsonResposta = mapper.writeValueAsString(newPayment);
             resp.getWriter().print(jsonResposta);
 
-        // 2. DESCOMENTE ESTE BLOCO CATCH para lidar com erros do banco
-        } catch (SQLException e) { // (Descomente quando adicionar a chamada do DAO)
-             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); 
-             resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
-             e.printStackTrace();
+        } catch (SQLException e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); 
+            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            e.printStackTrace();
         } catch (Exception e) {
-            // (Pega erros de JSON mal formatado, como o formato da data)
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); 
             resp.getWriter().print("{\"erro\": \"JSON inválido. " + e.getMessage() + "\"}");
-            e.printStackTrace(); // Isso mostrará o erro de formato de data
+            e.printStackTrace();
         }
+    }
+
+    // --- READ (Ler) ---
+    // GET /api/payments  (Listar todos)
+    // GET /api/payments/1 (Buscar por ID)
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         
-        // 7. REMOVIDAS AS LINHAS DUPLICADAS DAQUI
+        String pathInfo = req.getPathInfo(); // Pega o que vem depois de "/api/payments"
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+
+        try {
+            if (pathInfo == null || pathInfo.equals("/")) {
+                // --- Rota 1: Listar Todos (/api/payments) ---
+                List<Payment> payments = paymentDAO.getAll();
+                resp.getWriter().print(mapper.writeValueAsString(payments));
+            
+            } else {
+                // --- Rota 2: Buscar Um por ID (/api/payments/1) ---
+                
+                // Extrai o "1" da URL "/1"
+                int id = Integer.parseInt(pathInfo.substring(1));
+                Payment payment = paymentDAO.getById(id);
+                
+                if (payment == null) {
+                    // Não encontrou
+                    resp.setStatus(HttpServletResponse.SC_NOT_FOUND); // 404
+                    resp.getWriter().print("{\"erro\": \"Pagamento não encontrado\"}");
+                } else {
+                    // Encontrou, retorna o produto
+                    resp.setStatus(HttpServletResponse.SC_OK); // 200
+                    resp.getWriter().print(mapper.writeValueAsString(payment));
+                }
+            }
+        } catch (NumberFormatException e) {
+            // Se a URL for /api/payments/abc (inválido)
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"ID de pagamento inválido.\"}");
+        } catch (SQLException e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            e.printStackTrace();
+        }
+    }
+
+    // --- UPDATE (Atualizar) ---
+    // PUT /api/payments/1
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String pathInfo = req.getPathInfo();
+        
+        // 1. PUT precisa de um ID na URL
+        if (pathInfo == null || pathInfo.equals("/")) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"É preciso informar o ID do pagamento na URL para atualizar.\"}");
+            return;
+        }
+
+        try {
+            int id = Integer.parseInt(pathInfo.substring(1));
+            String jsonBody = req.getReader().lines().reduce("", (a, b) -> a + b);
+            
+            Payment payment = mapper.readValue(jsonBody, Payment.class);
+            
+            // 2. Garante que o ID do objeto é o mesmo da URL
+            payment.setId(id); 
+            
+            // 3. (Validação, igual ao POST - opcional mas recomendado)
+            
+            // 4. Chama o DAO
+            paymentDAO.update(payment);
+            
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            resp.setStatus(HttpServletResponse.SC_OK); // 200
+            resp.getWriter().print(mapper.writeValueAsString(payment)); // Retorna o objeto atualizado
+            
+        } catch (NumberFormatException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"ID de produto inválido.\"}");
+        } catch (SQLException e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            e.printStackTrace();
+        } catch (Exception e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"JSON inválido. " + e.getMessage() + "\"}");
+            e.printStackTrace();
+        }
+    }
+
+    // --- DELETE (Apagar) ---
+    // DELETE /api/payments/1
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String pathInfo = req.getPathInfo();
+        
+        if (pathInfo == null || pathInfo.equals("/")) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"É preciso informar o ID do pagamento na URL para deletar.\"}");
+            return;
+        }
+
+        try {
+            int id = Integer.parseInt(pathInfo.substring(1));
+            
+            // Chama o DAO
+            paymentDAO.delete(id);
+            
+            // Resposta de Delete não tem corpo (corpo vazio)
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT); // 204
+            
+        } catch (NumberFormatException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"ID de produto inválido.\"}");
+        } catch (SQLException e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            e.printStackTrace();
+        }
     }
 }

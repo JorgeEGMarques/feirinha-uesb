@@ -3,7 +3,7 @@ package model.entities;
 import java.time.LocalDate;
 
 public class Payment {
-    private int id; // Chave primária, geralmente não é nula
+    private Integer id; // Chave primária, geralmente não é nula
     
     // --- MUDANÇAS AQUI ---
     // Colunas que podem ser NULAS (referências) devem ser Objetos
@@ -12,14 +12,14 @@ public class Payment {
     // --- FIM DAS MUDANÇAS ---
 
     private String buyerCpf;
-    private int tentCode; // Assumindo que cod_barraca é NOT NULL no SQL
+    private Integer tentCode; // Assumindo que cod_barraca é NOT NULL no SQL
     private String paymentForm;
     private LocalDate paymentDate;
 
     public Payment(){}
     
     // (O construtor também muda)
-    public Payment(int id, Integer saleId, Integer reservationCode, String buyerCpf, int tentCode, String paymentForm, LocalDate paymentDate){
+    public Payment(Integer id, Integer saleId, Integer reservationCode, String buyerCpf, Integer tentCode, String paymentForm, LocalDate paymentDate){
         this.id = id;
         this.saleId = saleId;
         this.reservationCode = reservationCode;
@@ -29,7 +29,7 @@ public class Payment {
         this.paymentDate = paymentDate;
     }
 
-    public int getId(){
+    public Integer getId(){
         return id;
     }
 
@@ -46,7 +46,7 @@ public class Payment {
         return buyerCpf;
     }
 
-    public int getTentCode(){
+    public Integer getTentCode(){
         return tentCode;
     }
 
@@ -58,7 +58,7 @@ public class Payment {
         return paymentDate;
     }
     
-    public void setId(int id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -74,7 +74,7 @@ public class Payment {
     public void setBuyerCpf(String buyerCpf) {
         this.buyerCpf = buyerCpf;
     }
-    public void setTentCode(int tentCode) {
+    public void setTentCode(Integer tentCode) {
         this.tentCode = tentCode;
     }
     public void setPaymentForm(String paymentForm) {
