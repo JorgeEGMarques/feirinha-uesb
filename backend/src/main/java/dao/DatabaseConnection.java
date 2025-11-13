@@ -6,32 +6,27 @@ import java.sql.SQLException;
 
 public class DatabaseConnection {
 
-    // --- CONFIGURE SEUS DADOS AQUI ---
-    
-    private static final String JDBC_URL = ""; 
-    
-    // 2. Coloque o usuário do seu Postgres (o padrão é "postgres")
-    private static final String JDBC_USER = ""; 
-    
-    // 3. Coloque a senha que você definiu ao instalar o Postgres
-    private static final String JDBC_PASSWORD = ""; // <-- MUDE ISSO
-    
-    // --- FIM DA CONFIGURAÇÃO ---
+    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/db_feirinha"; 
+    private static final String JDBC_USER = "sampaio"; 
+    private static final String JDBC_PASSWORD = "12345"; 
 
-    /**
-     * Obtém uma nova conexão com o banco de dados.
-     */
     public static Connection getConnection() throws SQLException {
         try {
-            // 1. Carrega o driver do PostgreSQL
-            // (Isso força o Java a reconhecer o driver que veio do pom.xml)
             Class.forName("org.postgresql.Driver"); 
+            Connection conn = DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
+
+            // 🔹 ESSENCIAL: ativa commit automático
+            conn.setAutoCommit(true);
+
+            // 🔹 Apenas para depuração
+            System.out.println("[DB] Conexão aberta com sucesso!");
+            
+            return conn;
         } catch (ClassNotFoundException e) {
-            // Isso só falha se a dependência do pom.xml estiver faltando/corrompida
             throw new SQLException("Driver JDBC do PostgreSQL não encontrado.", e);
+        } catch (SQLException e) {
+            System.err.println("[DB] Erro ao conectar: " + e.getMessage());
+            throw e;
         }
-        
-        // 2. Tenta conectar e retornar a conexão
-        return DriverManager.getConnection(JDBC_URL, JDBC_USER, JDBC_PASSWORD);
     }
 }
