@@ -1,0 +1,86 @@
+package model.entities;
+
+import java.time.LocalDate;
+
+public class Payment {
+    private Integer id; // Chave primária, geralmente não é nula
+    
+    // --- MUDANÇAS AQUI ---
+    // Colunas que podem ser NULAS (referências) devem ser Objetos
+    private Integer saleId; 
+    private Integer reservationCode; 
+    // --- FIM DAS MUDANÇAS ---
+
+    private String buyerCpf;
+    private Integer tentCode; // Assumindo que cod_barraca é NOT NULL no SQL
+    private String paymentForm;
+    private LocalDate paymentDate;
+
+    public Payment(){}
+    
+    // (O construtor também muda)
+    public Payment(Integer id, Integer saleId, Integer reservationCode, String buyerCpf, Integer tentCode, String paymentForm, LocalDate paymentDate){
+        this.id = id;
+        this.saleId = saleId;
+        this.reservationCode = reservationCode;
+        this.buyerCpf = buyerCpf;
+        this.tentCode = tentCode;
+        this.paymentForm = paymentForm;
+        this.paymentDate = paymentDate;
+    }
+
+    public Integer getId(){
+        return id;
+    }
+
+    // --- MUDANÇAS AQUI ---
+    public Integer getSaleId(){
+        return saleId;
+    }
+    public Integer getReservationCode(){
+        return reservationCode;
+    }
+    // --- FIM DAS MUDANÇAS ---
+
+    public String getBuyerCpf(){
+        return buyerCpf;
+    }
+
+    public Integer getTentCode(){
+        return tentCode;
+    }
+
+    public String getPaymentForm(){
+        return paymentForm;
+    }
+
+    public LocalDate getPaymentDate(){
+        return paymentDate;
+    }
+    
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    // --- MUDANÇAS AQUI ---
+    public void setSaleId(Integer saleId) {
+        this.saleId = saleId;
+    }
+    public void setReservationCode(Integer reservationCode) {
+        this.reservationCode = reservationCode;
+    }
+    // --- FIM DAS MUDANÇAS ---
+    
+    public void setBuyerCpf(String buyerCpf) {
+        this.buyerCpf = buyerCpf;
+    }
+    public void setTentCode(Integer tentCode) {
+        this.tentCode = tentCode;
+    }
+    public void setPaymentForm(String paymentForm) {
+        this.paymentForm = paymentForm;
+    }
+    public void setPaymentDate(LocalDate paymentDate) {
+        this.paymentDate = paymentDate;
+    }
+}
