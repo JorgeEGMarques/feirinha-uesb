@@ -31,86 +31,94 @@
 ----------
 **Rotas e exemplos**
 
-- Users (`UserServlet`)
-  - Mapeamento: `@WebServlet(urlPatterns = {"/api/usuarios", "/api/usuarios/*"})`
-  - Métodos: `POST` (criar). 
-  - Endpoint exemplo: `POST /crud/api/usuarios`
-  - Body (JSON):
-    {
-      "cpf": "11122233344",
-      "nome": "João Silva",
-      "telefone": "27999998888"
-    }
+**Usuários (Users)**
+- Mapeamento: `@WebServlet(urlPatterns = {"/api/usuarios","/api/usuarios/*"})`
+- Campos (modelo): `cpf` (string 11 chars), `nome`, `telefone`
 
-- Products (`ProductServlet`)
-  - Mapeamento: `/api/products` e `/api/products/{id}`
-  - Métodos: `POST`, `GET`, `PUT`, `DELETE`
-  - Exemplos:
-    - `POST /crud/api/products` — criar
-    - `GET /crud/api/products` — listar todos
-    - `GET /crud/api/products/100` — buscar por id
-    - `PUT /crud/api/products/100` — atualizar
-    - `DELETE /crud/api/products/100` — deletar
-  - Body Produto:
-    {
-      "code": 100,
-      "name": "Coxinha",
-      "price": 5.50,
-      "description": "Coxinha de frango"
-    }
-  - Observação: `price` é obrigatório e deve ser > 0.
+- Create (POST /api/usuarios)
+  - curl:
+    - `curl -X POST "$BASE/api/usuarios" -H "Content-Type: application/json" -d '{"cpf":"11122233344","nome":"João Silva","telefone":"27999998888"}'`
+  - PowerShell:
+    - ```powershell
+      $body = @'{"cpf":"11122233344","nome":"João Silva","telefone":"27999998888"}'@
+      Invoke-RestMethod -Method Post -Uri "$BASE/api/usuarios" -ContentType 'application/json' -Body $body
+      ```
 
-- Tents / Barracas (`TentServlet`)
-  - Mapeamento: `/api/tents` e `/api/tents/{id}`
-  - Métodos: `POST` (criar)
-  - Body Tent:
-    {
-      "code": 1,
-      "cpfHolder": "22233344455",
-      "name": "Barraca A",
-      "userLicense": "dGVzdF9saWNlbnNl"
-    }
+- Read (GET)
+  - Listar todos: `GET /api/usuarios`
+    - `curl "$BASE/api/usuarios"`
+  - Buscar por CPF (exato, 11 chars): `GET /api/usuarios/{cpf}`
+    - `curl "$BASE/api/usuarios/11122233344"`
+  - Atenção: **não usa JSON no corpo do GET** — o servlet usa a URL para identificar o CPF.
 
-- Reservations (`ReservationServlet`)
-  - Mapeamento: `/api/reservations` e `/api/reservations/{code}`
-  - Métodos: `POST`, `GET`, `PUT`, `DELETE`
-  - Body Reservation (exemplo com itens):
-    {
-      "code": 10,
-      "holderCpf": "33344455566",
-      "reservationDate": "2025-11-25",
-      "status": "PENDING",
-      "items": [ { "reservationCode": 10, "productCode": 100, "reservationItemQuantity": 2, "reservationPrice": 5.50 } ]
-    }
+- Update (PUT /api/usuarios/{cpf})
+  - Envie somente `nome` e/ou `telefone` no JSON; o CPF é tomado da URL.
+  - Exemplo:
+    - `curl -X PUT "$BASE/api/usuarios/11122233344" -H "Content-Type: application/json" -d '{"nome":"João Silva Atualizado","telefone":"11988877766"}'`
 
-- Sales / Vendas (`SaleServlet`)
-  - Mapeamento: `/api/sales` e `/api/sales/{id}`
-  - Métodos: `POST` (criar).
-  - Atenção importante: na DDL atual a tabela `venda.id_venda` NÃO é auto-gerada (não é SERIAL/IDENTITY). Portanto o backend ATUAL espera que o JSON contenha `id`.
-  - Body Sale (exemplo):
-    {
-      "id": 1,
-      "saleDate": "2025-11-25",
-      "tentCode": 1,
-      "userCode": "11122233344",
-      "items": [ { "productCode": 100, "saleId": 1, "saleQuantity": 3, "salePrice": 5.50 } ]
-    }
-  - Observação: `saleDate`, `cod_barraca` (tentCode) e `cod_usuario` (userCode) são NOT NULL no banco; se algum for nulo o INSERT falhará com erro de constraint.
+- Delete (DELETE /api/usuarios/{cpf})
+  - `curl -X DELETE "$BASE/api/usuarios/11122233344"`
 
-- Payments / Pagamentos (`PaymentServlet`)
-  - Mapeamento: `/api/payments` e `/api/payments/{id}`
-  - Métodos: `POST`, `GET`, `PUT`, `DELETE`
-  - Body Payment (exemplo):
-    {
-      "id": 1,
-      "saleId": 1,
-      "reservationCode": null,
-      "buyerCpf": "33344455566",
-      "tentCode": 1,
-      "paymentForm": "CASH",
-      "paymentDate": "2025-11-25"
-    }
-  - Observação: `saleId` ou `reservationCode` podem ser nulos dependendo do fluxo (venda vs reserva). `id_pagamento` na DDL também não é SERIAL.
+**Produtos (Products)**
+- Mapeamento: `@WebServlet(urlPatterns = {"/api/products","/api/products/*"})`
+- Modelo: `code` (int), `name`, `price` (BigDecimal), `description`
+
+- Create: `POST /api/products`
+  - Exemplo JSON:
+    - `{"name":"Maçã","price":3.50,"description":"Maçã gala"}`
+
+- Read: `GET /api/products` (listar) e `GET /api/products/{id}` (buscar)
+- Update: `PUT /api/products/{id}` → envie o objeto (nome, price, description)
+- Delete: `DELETE /api/products/{id}`
+
+**Barracas (Tents)**
+- Mapeamento: `@WebServlet("/api/tents/*")`
+- Modelo: `code` (int), `cpfHolder` (owner CPF), `name`, `userLicense` (byte[] como Base64 no JSON)
+
+- Create: `POST /api/tents`
+  - Exemplo:
+    - `{"code":1,"cpfHolder":"11122233344","name":"Barraca A","userLicense":"dGVzdA=="}`
+  - Obs: `cpfHolder` deve existir na tabela `usuario` (FK); caso contrário o INSERT falhará.
+
+- Read/Update/Delete: `GET/PUT/DELETE /api/tents/{id}`
+
+**Vendas (Sales)**
+- Mapeamento: `@WebServlet("/api/sales/*")`
+- Modelo: `id` (int), `saleDate` (date), `tentCode` (int), `userCode` (cpf string), `items` (array de SaleItem)
+
+- Create (POST /api/sales)
+  - Exemplo:
+    - `{
+         "id":1,
+         "saleDate":"2006-03-08",
+         "tentCode":1,
+         "userCode":"11122233344",
+         "items":[{"productCode":1,"saleQuantity":2,"salePrice":3.50}]
+       }`
+  - FK: `tentCode` e `userCode` devem existir antes de criar a venda (caso contrário, violação de FK `venda_cod_barraca_fkey`).
+
+- Read: `GET /api/sales` e `GET /api/sales/{id}`
+- Update: `PUT /api/sales/{id}` → implementado para atualizar a linha da venda e substituir seus itens em transação.
+  - Envie novo objeto `Sale` sem o campo `id` (ou mantenha), o servlet define `id` a partir da URL.
+
+- Delete: `DELETE /api/sales/{id}`
+
+**Reservas (Reservations)**
+- Mapeamento: `@WebServlet("/api/reservations/*")`
+- Modelo: `code`, `holderCpf`, `reservationDate`, `status`, `items` (array)
+
+- Create: `POST /api/reservations` (salva a reserva e itens em transação)
+- Read: `GET /api/reservations` e `GET /api/reservations/{code}` (retorna também os itens)
+- Update: `PUT /api/reservations/{code}` — Atualmente o servlet aceita atualização do campo `status` via `reservationDAO.updateStatus(code, status)`.
+  - Para alterar apenas o status envie: `{"status":"CONFIRMADA"}`
+- Delete: `DELETE /api/reservations/{code}` (deleta reserva e seus itens em transação)
+
+**Pagamentos (Payments)**
+- Mapeamento: `@WebServlet(urlPatterns = {"/api/payments","/api/payments/*"})`
+- Modelo: `id`, `saleId` (Integer nullable), `reservationCode` (Integer nullable), `buyerCpf`, `tentCode`, `paymentForm`, `paymentDate`
+
+- Create: `POST /api/payments` — `saleId` ou `reservationCode` podem ser `null`. `id` também deve ser fornecido pelo cliente (DDL não é SERIAL).
+- Read/Update/Delete: suportados em `/api/payments` e `/api/payments/{id}`
 
 ----------
 **Regras de integração e sequência (FKs)**
@@ -175,3 +183,19 @@ Verificação e troubleshooting
 - Logs do Tomcat: verifique `logs/catalina.out` ou `logs/localhost.<date>.log` para stacktraces de inicialização e erros ao executar SQL.
 - Erros de driver JDBC: assegure que a dependência do PostgreSQL esteja presente no `pom.xml`. Se o erro for `Driver JDBC do PostgreSQL não encontrado.`, verifique o `pom.xml` e rode `mvn dependency:tree`.
 - Erros de FK/NOT NULL: crie os registros dependentes (usuarios, barracas, produtos) antes de criar vendas/itens/pagamentos.
+
+
+**Coleção de exemplos rápida**
+- Criar uma coleção chamada `feirinha-backend` com requests:
+  - `POST /api/usuarios` (body JSON do usuário)
+  - `GET /api/usuarios` (listar)
+  - `GET /api/usuarios/{cpf}` (buscar)
+  - `PUT /api/usuarios/{cpf}` (editar)
+  - `DELETE /api/usuarios/{cpf}` (deletar)
+  - `POST /api/products`, `GET /api/products`, `GET /api/products/{id}`, `PUT`, `DELETE`
+  - `POST /api/tents`, `GET /api/tents/{id}`, `PUT`, `DELETE`
+  - `POST /api/sales`, `GET /api/sales`, `GET /api/sales/{id}`, `PUT`, `DELETE`
+  - `POST /api/reservations`, `GET /api/reservations`, `PUT /api/reservations/{id}` (status), `DELETE`
+  - `POST /api/payments`, `GET /api/payments`, `GET /api/payments/{id}`, `PUT`, `DELETE`
+
+----------

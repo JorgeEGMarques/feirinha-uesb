@@ -133,23 +133,26 @@ public class ReservationServlet extends HttpServlet {
         try {
             int code = Integer.parseInt(pathInfo.substring(1));
             String jsonBody = req.getReader().lines().reduce("", (a, b) -> a + b);
-            
+
             Reservation reservation = mapper.readValue(jsonBody, Reservation.class);
-            
-            // 2. Garante que o ID do objeto é o mesmo da URL
-            reservation.setCode(code); 
-            
-            // 3. (Validação, igual ao POST - opcional mas recomendado)
-            
-            // 4. Chama o DAO
-            
-            // reservationDAO.update(reservation);
-            
-            resp.setContentType("application/json");
-            resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_OK); // 200
-            resp.getWriter().print(mapper.writeValueAsString(reservation)); // Retorna o objeto atualizado
-            
+                // Ensure ID matches URL
+                reservation.setCode(code);
+
+                // 3. Validação básica
+                if (reservation.getHolderCpf() == null || reservation.getReservationDate() == null || reservation.getStatus() == null) {
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    resp.getWriter().print("{\"erro\": \"Campos obrigatórios faltando (holderCpf, reservationDate, status).\"}");
+                    return;
+                }
+
+                // 4. Chama o DAO para atualizar pai + itens em transação
+                reservationDAO.update(reservation);
+
+                resp.setContentType("application/json");
+                resp.setCharacterEncoding("UTF-8");
+                resp.setStatus(HttpServletResponse.SC_OK); // 200
+                resp.getWriter().print(mapper.writeValueAsString(reservation)); // Retorna o objeto atualizado
+
         } catch (NumberFormatException e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().print("{\"erro\": \"ID de produto inválido.\"}");

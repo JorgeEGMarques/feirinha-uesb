@@ -6,7 +6,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement; // 1. IMPORTAR O STATEMENT (Necessário para RETURN_GENERATED_KEYS)
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 

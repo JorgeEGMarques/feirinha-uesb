@@ -168,6 +168,64 @@ public class SaleDAO {
             }
         }
     }
+
+    /**
+     * Atualiza uma Venda e substitui seus itens em uma transação.
+     */
+    public void update(Sale sale) throws SQLException {
+        String sqlUpdateSale = "UPDATE public.venda SET data_venda = ?, cod_barraca = ?, cod_usuario = ? WHERE id_venda = ?";
+        String sqlDeleteItems = "DELETE FROM public.item_venda WHERE id_venda = ?";
+        String sqlInsertItem = "INSERT INTO public.item_venda (cod_prod, id_venda, qntd_venda, preco_venda) VALUES (?, ?, ?, ?)";
+
+        Connection conn = null;
+        PreparedStatement stmtUpdate = null;
+        PreparedStatement stmtDeleteItems = null;
+        PreparedStatement stmtInsertItem = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            // Update sale row
+            stmtUpdate = conn.prepareStatement(sqlUpdateSale);
+            stmtUpdate.setObject(1, sale.getSaleDate());
+            stmtUpdate.setInt(2, sale.getTentCode());
+            stmtUpdate.setString(3, sale.getUserCode());
+            stmtUpdate.setInt(4, sale.getId());
+            stmtUpdate.executeUpdate();
+
+            // Delete existing items
+            stmtDeleteItems = conn.prepareStatement(sqlDeleteItems);
+            stmtDeleteItems.setInt(1, sale.getId());
+            stmtDeleteItems.executeUpdate();
+
+            // Insert new items (if any)
+            if (sale.getItems() != null && !sale.getItems().isEmpty()) {
+                stmtInsertItem = conn.prepareStatement(sqlInsertItem);
+                for (model.entities.SaleItem item : sale.getItems()) {
+                    stmtInsertItem.setInt(1, item.getProductCode());
+                    stmtInsertItem.setInt(2, sale.getId());
+                    stmtInsertItem.setShort(3, item.getSaleQuantity());
+                    stmtInsertItem.setBigDecimal(4, item.getSalePrice());
+                    stmtInsertItem.addBatch();
+                }
+                stmtInsertItem.executeBatch();
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) conn.rollback();
+            throw new SQLException("Erro de transação ao atualizar venda: " + e.getMessage(), e);
+        } finally {
+            if (stmtInsertItem != null) stmtInsertItem.close();
+            if (stmtDeleteItems != null) stmtDeleteItems.close();
+            if (stmtUpdate != null) stmtUpdate.close();
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        }
+    }
     
     // --- MÉTODO AJUDANTE (PAI) ---
     private Sale mapRowToSale(ResultSet rs) throws SQLException {

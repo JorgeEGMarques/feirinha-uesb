@@ -77,4 +77,91 @@ public class SaleServlet extends HttpServlet {
             e.printStackTrace(); // Isso mostrará o erro de formato de data
         }
     }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String pathInfo = req.getPathInfo();
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
+
+        try {
+            if (pathInfo == null || pathInfo.equals("/")) {
+                java.util.List<model.entities.Sale> sales = saleDAO.getAll();
+                resp.getWriter().print(mapper.writeValueAsString(sales));
+            } else {
+                int id = Integer.parseInt(pathInfo.substring(1));
+                model.entities.Sale sale = saleDAO.getById(id);
+                if (sale == null) {
+                    resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                    resp.getWriter().print("{\"erro\": \"Venda não encontrada\"}");
+                } else {
+                    resp.setStatus(HttpServletResponse.SC_OK);
+                    resp.getWriter().print(mapper.writeValueAsString(sale));
+                }
+            }
+        } catch (NumberFormatException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"ID inválido\"}");
+        } catch (SQLException e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String pathInfo = req.getPathInfo();
+        if (pathInfo == null || pathInfo.equals("/")) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"É preciso informar o ID da venda na URL para atualizar.\"}");
+            return;
+        }
+
+        try {
+            int id = Integer.parseInt(pathInfo.substring(1));
+            String jsonBody = req.getReader().lines().reduce("", (a, b) -> a + b);
+            model.entities.Sale sale = mapper.readValue(jsonBody, model.entities.Sale.class);
+            sale.setId(id);
+            saleDAO.update(sale);
+            resp.setContentType("application/json");
+            resp.setCharacterEncoding("UTF-8");
+            resp.setStatus(HttpServletResponse.SC_OK);
+            resp.getWriter().print(mapper.writeValueAsString(sale));
+        } catch (NumberFormatException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"ID inválido\"}");
+        } catch (SQLException e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            e.printStackTrace();
+        } catch (Exception e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"JSON inválido. " + e.getMessage() + "\"}");
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String pathInfo = req.getPathInfo();
+        if (pathInfo == null || pathInfo.equals("/")) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"É preciso informar o ID da venda na URL para deletar.\"}");
+            return;
+        }
+
+        try {
+            int id = Integer.parseInt(pathInfo.substring(1));
+            saleDAO.delete(id);
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        } catch (NumberFormatException e) {
+            resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            resp.getWriter().print("{\"erro\": \"ID inválido\"}");
+        } catch (SQLException e) {
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            resp.getWriter().print("{\"erro\": \"Erro de Banco de Dados: " + e.getMessage() + "\"}");
+            e.printStackTrace();
+        }
+    }
 }

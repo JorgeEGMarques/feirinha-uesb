@@ -196,6 +196,64 @@ public class ReservationDAO {
         }
     }
 
+    /**
+     * Atualiza a reserva (pai) e substitui todos os itens (filhos) em uma única transação.
+     */
+    public void update(Reservation reservation) throws SQLException {
+        String sqlUpdateReserva = "UPDATE public.reserva SET cpf_titular = ?, data_reserva = ?, status_reserva = ? WHERE cod_reserva = ?";
+        String sqlDeleteItems = "DELETE FROM public.item_reserva WHERE cod_res = ?";
+        String sqlInsertItem = "INSERT INTO public.item_reserva (cod_res, cod_prod, qntd_item_reserva, preco_reserva) VALUES (?, ?, ?, ?)";
+
+        Connection conn = null;
+        PreparedStatement stmtUpdate = null;
+        PreparedStatement stmtDeleteItems = null;
+        PreparedStatement stmtInsertItem = null;
+
+        try {
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            // Atualiza o registro da reserva (pai)
+            stmtUpdate = conn.prepareStatement(sqlUpdateReserva);
+            stmtUpdate.setString(1, reservation.getHolderCpf());
+            stmtUpdate.setObject(2, reservation.getReservationDate());
+            stmtUpdate.setString(3, reservation.getStatus());
+            stmtUpdate.setInt(4, reservation.getCode());
+            stmtUpdate.executeUpdate();
+
+            // Deleta os itens antigos
+            stmtDeleteItems = conn.prepareStatement(sqlDeleteItems);
+            stmtDeleteItems.setInt(1, reservation.getCode());
+            stmtDeleteItems.executeUpdate();
+
+            // Insere novos itens (se houver)
+            if (reservation.getItems() != null && !reservation.getItems().isEmpty()) {
+                stmtInsertItem = conn.prepareStatement(sqlInsertItem);
+                for (ReservationItem item : reservation.getItems()) {
+                    stmtInsertItem.setInt(1, reservation.getCode());
+                    stmtInsertItem.setInt(2, item.getProductCode());
+                    stmtInsertItem.setShort(3, item.getReservationitemQuantity());
+                    stmtInsertItem.setBigDecimal(4, item.getReservationPrice());
+                    stmtInsertItem.addBatch();
+                }
+                stmtInsertItem.executeBatch();
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) conn.rollback();
+            throw new SQLException("Erro de transação ao atualizar reserva: " + e.getMessage(), e);
+        } finally {
+            if (stmtInsertItem != null) stmtInsertItem.close();
+            if (stmtDeleteItems != null) stmtDeleteItems.close();
+            if (stmtUpdate != null) stmtUpdate.close();
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        }
+    }
+
     // --- MÉTODO AJUDANTE (PAI) ---
     private Reservation mapRowToReservation(ResultSet rs) throws SQLException {
         Reservation r = new Reservation();
