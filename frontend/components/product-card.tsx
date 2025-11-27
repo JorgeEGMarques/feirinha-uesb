@@ -1,22 +1,25 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import Image from "next/image";
+import { Button } from "./ui/button";
+import { product } from "@/utils/types"
 
-interface Props {
-  product: { src: string, price: number, name: string }
+interface ProductCardProps {
+  product: product
 }
 
-export const ProductCard = ({ product }: Props) => {
+export const ProductCard = ({ product }: ProductCardProps) => {
   return (
-    <Link href={ "/products/1" }>
+    <Link href={ `/products/${product.id}` }>
       <Card className="group hover:shadow-2xl transition duration-300 py-0 h-full flex flex-col border-gray-300 gap-0">
         { product.src && (
           <div className="relative h-80 w-full">
             <Image
               src={ product.src }
               alt={ product.name }
-              layout="fill"
-              objectFit="cover"
+              fill={true}
+              style={{ objectFit: 'cover' }}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="group-hover:opacity-90 transition-opacity duration-300 rounded-t-lg"
             />
           </div>
@@ -33,6 +36,8 @@ export const ProductCard = ({ product }: Props) => {
               R${(product.price)}
             </p>
           ) }
+
+          <Button>Ver detalhes</Button>
         </CardContent>
       </Card>
     </Link>);

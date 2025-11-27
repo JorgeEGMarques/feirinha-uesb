@@ -1,0 +1,1 @@
+export type product = { id: string, src: string, price: number, name: string }

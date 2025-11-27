@@ -1,0 +1,14 @@
+{
+  "products": [
+    { "id": "1", "src":"/dorivaldo_balao.webp", "name": "Balão Ruliço", "price": 69.50 },
+    { "id": "2", "src":"/queeeeente.webp", "name": "Labubs", "price": 23.98 },
+    { "id": "3", "src":"/esqueletos.webp", "name": "Esqueletos", "price": 1.00 }
+  ],
+  "comments": [
+    { "id": "1", "text": "a comment about post 1", "postId": "1" },
+    { "id": "2", "text": "another comment about post 1", "postId": "1" }
+  ],
+  "profile": {
+    "name": "typicode"
+  }
+}
