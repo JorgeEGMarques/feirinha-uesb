@@ -42,12 +42,12 @@ public class PaymentServlet extends HttpServlet {
         try {
             Payment newPayment = mapper.readValue(jsonBody, Payment.class);
             
-            // Validação (Barreira 1) - O Servlet protege o DAO
-            if (newPayment.getId() == null || newPayment.getBuyerCpf() == null || newPayment.getPaymentForm() == null || newPayment.getPaymentDate() == null) {
-                 resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400
-                 resp.getWriter().print("{\"erro\": \"Falta de campos obrigatórios.\"}");
-                 return;
-            }
+              // Validação (Barreira 1) - não exigir 'id' (gera o DB). Exigir campos obrigatórios mínimos.
+              if (newPayment.getBuyerCpf() == null || newPayment.getPaymentForm() == null || newPayment.getPaymentDate() == null || newPayment.getTentCode() == null) {
+                  resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400
+                  resp.getWriter().print("{\"erro\": \"Falta de campos obrigatórios: cpf_comprador, forma_pagamento, data_pagamento, cod_barraca.\"}");
+                  return;
+              }
 
             // --- LÓGICA DO BANCO (ATIVA) ---
             paymentDAO.create(newPayment); 

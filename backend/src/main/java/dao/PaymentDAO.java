@@ -6,6 +6,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate; 
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,33 +16,39 @@ public class PaymentDAO {
      * Cria um novo pagamento no banco de dados.
      */
     public void create(Payment payment) throws SQLException {
-        String sql = "INSERT INTO public.pagamento (id_pagamento, id_venda, cod_reserva, cpf_comprador, cod_barraca, forma_pagamento, data_pagamento) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        
+        String sql = "INSERT INTO public.pagamento (id_venda, cod_reserva, cpf_comprador, cod_barraca, forma_pagamento, data_pagamento) VALUES (?, ?, ?, ?, ?, ?)";
+
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
-            stmt.setInt(1, payment.getId());
-            
-            // Lógica correta para campos NULÁVEIS (Integer)
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            // id_venda pode ser NULL
             if (payment.getSaleId() == null) {
-                stmt.setNull(2, java.sql.Types.INTEGER);
+                stmt.setNull(1, java.sql.Types.INTEGER);
             } else {
-                stmt.setInt(2, payment.getSaleId());
+                stmt.setInt(1, payment.getSaleId());
             }
 
             if (payment.getReservationCode() == null) {
-                 stmt.setNull(3, java.sql.Types.INTEGER);
+                 stmt.setNull(2, java.sql.Types.INTEGER);
             } else {
-                 // CORREÇÃO: O modelo Payment usa 'Integer', não 'Long'
-                 stmt.setInt(3, payment.getReservationCode());
+                 stmt.setInt(2, payment.getReservationCode());
             }
             
-            stmt.setString(4, payment.getBuyerCpf());
-            stmt.setInt(5, payment.getTentCode());
-            stmt.setString(6, payment.getPaymentForm());
-            stmt.setObject(7, payment.getPaymentDate()); // setObject é o correto para LocalDate
-            
-            stmt.executeUpdate();
+            stmt.setString(3, payment.getBuyerCpf());
+            stmt.setInt(4, payment.getTentCode());
+            stmt.setString(5, payment.getPaymentForm());
+            stmt.setObject(6, payment.getPaymentDate()); // setObject é o correto para LocalDate
+
+            int rows = stmt.executeUpdate();
+            if (rows == 0) throw new SQLException("Falha ao criar pagamento, nenhuma linha afetada.");
+
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    payment.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Falha ao criar pagamento, não obteve o ID.");
+                }
+            }
         }
     }
 

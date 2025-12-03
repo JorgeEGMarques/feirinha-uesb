@@ -18,7 +18,7 @@ public class SaleDAO {
      */
     public void create(Sale sale) throws SQLException {
         
-        String sqlSale = "INSERT INTO public.venda (id_venda, data_venda, cod_barraca, cod_usuario) VALUES (?, ?, ?, ?)";
+        String sqlSale = "INSERT INTO public.venda (data_venda, cod_barraca, cod_usuario) VALUES (?, ?, ?)";
         String sqlItem = "INSERT INTO public.item_venda (cod_prod, id_venda, qntd_venda, preco_venda) VALUES (?, ?, ?, ?)";
 
         Connection conn = null;
@@ -29,27 +29,35 @@ public class SaleDAO {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false); // Inicia transação
 
-            // --- PASSO 1: Salvar a Venda (Pai) ---
-            stmtSale = conn.prepareStatement(sqlSale);
+            // --- PASSO 1: Salvar a Venda (Pai) --- (DB gera o id_venda)
+            stmtSale = conn.prepareStatement(sqlSale, java.sql.Statement.RETURN_GENERATED_KEYS);
             
-            stmtSale.setInt(1, sale.getId());
-            stmtSale.setObject(2, sale.getSaleDate());
-            stmtSale.setInt(3, sale.getTentCode());
-            stmtSale.setString(4, sale.getUserCode()); // Modelo usa String, SQL usa char(11). Correto.
+            stmtSale.setObject(1, sale.getSaleDate());
+            stmtSale.setInt(2, sale.getTentCode());
+            stmtSale.setString(3, sale.getUserCode()); // Modelo usa String, SQL usa char(11). Correto.
             
             int rowsAffected = stmtSale.executeUpdate();
             if (rowsAffected == 0) {
                 throw new SQLException("Falha ao criar venda, nenhuma linha afetada.");
             }
 
-            // --- PASSO 2: Salvar os Itens (Filhos) ---
+            // --- PASSO 2: Ler o ID gerado e atualizar o objeto
+            try (ResultSet generatedKeys = stmtSale.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    sale.setId(generatedKeys.getInt(1));
+                } else {
+                    throw new SQLException("Falha ao criar venda, não obteve o ID.");
+                }
+            }
+
+            // --- PASSO 3: Salvar os Itens (Filhos) ---
             if (sale.getItems() != null && !sale.getItems().isEmpty()) {
                 
                 stmtItem = conn.prepareStatement(sqlItem);
                 
                 for (SaleItem item : sale.getItems()) {
                     stmtItem.setInt(1, item.getProductCode());
-                    stmtItem.setInt(2, sale.getId()); // Usa o ID do Pai
+                    stmtItem.setInt(2, sale.getId()); // Usa o ID obtido do DB
                     stmtItem.setShort(3, item.getSaleQuantity());
                     stmtItem.setBigDecimal(4, item.getSalePrice());
                     stmtItem.addBatch();
