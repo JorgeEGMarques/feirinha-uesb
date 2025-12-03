@@ -21,23 +21,28 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               style={{ objectFit: 'cover' }}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="group-hover:opacity-90 transition-opacity duration-300 rounded-t-lg"
+              loading="eager"
             />
           </div>
         )}
 
-        <CardHeader className="p-4">
+        <CardHeader className="p-2">
           <CardTitle className="text-xl font-bold text-gray-800">
             { product.name }            
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 flex-grow flex flex-col justify-between">
+        <CardContent className="p-2 flex-grow flex flex-col justify-between">
+          { product.description && (
+            <p className="text-gray-600 text-sm mb-2">
+              {product.description}
+            </p>
+          ) }
           { product.price && (
             <p className="text-lg font-semibold text-gray-900">
               R${(product.price)}
             </p>
           ) }
-
-          <Button>Ver detalhes</Button>
+          <Button className="mt-5">Ver detalhes</Button>
         </CardContent>
       </Card>
     </Link>);
