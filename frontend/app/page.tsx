@@ -3,13 +3,10 @@ import Link from "next/link";
 import { Carousel } from "@/components/carousel";
 import { Button } from "@/components/ui/button";
 
-export default function Home() {
-  const products = [
-    { src:"/dorivaldo_balao.webp", price: 69.50, name: "Balão Ruliço" },
-    { src:"/queeeeente.webp", price: 23.98, name: "Labubs" },
-    { src:"/esqueletos.webp", price: 1.00, name: "Esqueletos" },
-  ]
-
+export default async function Home() {
+  const products = await fetch('http://localhost:3000/products')
+    .then(response => response.json())
+    .catch(error => console.error('Error', error));
 
   return (
     <div>
@@ -20,7 +17,7 @@ export default function Home() {
               Bem-vinde à Feirinha UESB!
             </h2>
             <p className="text-neutral-600">
-              Descubra os melhores itens pelos melhores preços aqui.
+              Descubra os melhores itens pelos melhores preços aqui
             </p>
             <Button
               asChild
@@ -41,6 +38,7 @@ export default function Home() {
             className="rounded"
             width={450}
             height={450}
+            loading="eager"
           />
         </div>
       </section>

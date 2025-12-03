@@ -1,11 +1,10 @@
 import { ProductList } from "@/components/product-list"
+import { product } from "@/utils/types";
 
-export default function ProductsPage() {
-  const products = [
-    { src:"/dorivaldo_balao.webp", price: 69.50, name: "Balão Ruliço" },
-    { src:"/queeeeente.webp", price: 23.98, name: "Labubs" },
-    { src:"/esqueletos.webp", price: 1.00, name: "Esqueletos" },
-  ]
+export default async function ProductsPage() {
+  const products = await fetch('http://localhost:3000/products')
+    .then(response => response.json())
+    .catch(error => console.error('Error', error));
 
   return (
     <div>

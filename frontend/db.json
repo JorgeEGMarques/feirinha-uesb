@@ -1,0 +1,20 @@
+{
+  "products": [
+    { "id": "1", "src":"/dorivaldo_balao.webp", "name": "Balão Ruliço", "description": "Uma enorme cabeça capaz de ser vista a quilômetros de distância", "price": 69.50 },
+    { "id": "2", "src":"/queeeeente.webp", "name": "Labubs", "description": "QUEEEEEEEEENTE", "price": 23.98 },
+    { "id": "3", "src":"/esqueletos.webp", "name": "Esqueletos", "description": "Três tropas terrestres rápidas, de alvo único, com ataques corpo a corpo, com poucos pontos de vida e dano muito baixo.", "price": 1.00 }
+  ],
+  "comments": [
+    { "id": "1", "text": "a comment about post 1", "postId": "1", "userId": "1" },
+    { "id": "2", "text": "another comment about post 1", "postId": "1", "userId": "2" },
+    { "id": "3", "text": "a comment about post 2", "postId": "2", "userId": "1" },
+    { "id": "4", "text": "another comment about post 2", "postId": "2", "userId": "2" }
+  ],
+  "tents": [
+    { "cod_barraca": "1", "cpf_dono": "2345678", "nome_barraca": "Barraca", "licensa_usuario": "tem", "lista_de_itens": [{"id": "1", "estoque": 30}, {"id": "2", "estoque": 40}, {"id": "3", "estoque": 22}] }
+  ],
+  "profile": [
+    {"id": "1", "login": "mclovin@gmail.com", "password":"senha", "name": "McLovin", "cpf": "2345678", "src": "/mclovin.webp" },
+    {"id": "2", "login": "fulano@gmail.com", "password":"123456", "name": "Fulano da Silva", "cpf": "123", "src": "https://placehold.co/128x128/6366f1/FFFFFF/svg?text=JG", "barracas": []}
+  ]
+}
