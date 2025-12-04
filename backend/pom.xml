@@ -5,9 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>br.com.meuprojeto</groupId>
     <artifactId>crud</artifactId>
-    <packaging>war</packaging> <version>1.0.0</version>
+    <packaging>war</packaging> 
+    <version>1.0.0</version>
     
     <properties>
+        <!-- Ajustado para Java 21 (Versão LTS estável usada no Docker) -->
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -15,12 +17,7 @@
 
     <dependencies>
 
-    <dependency>
-    <groupId>com.fasterxml.jackson.datatype</groupId>
-    <artifactId>jackson-datatype-jsr310</artifactId>
-    <version>2.17.2</version> 
-</dependency>
-        
+        <!-- Jakarta EE 10 API -->
         <dependency>
             <groupId>jakarta.platform</groupId>
             <artifactId>jakarta.jakartaee-api</artifactId>
@@ -28,21 +25,25 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Driver do PostgreSQL -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.3</version> </dependency>
+            <version>42.7.3</version> 
+        </dependency>
 
+        <!-- Jackson Core -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.17.1</version> </dependency>
+            <version>2.17.1</version> 
+        </dependency>
 
-                <!-- Esta dependência ensina o Jackson a lidar com LocalDate, LocalTime, etc. -->
+        <!-- Jackson Date/Time Support (Removida a duplicata, mantida esta versão) -->
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.17.1</version> <!-- Use a mesma versão do seu outro 'jackson-databind' -->
+            <version>2.17.1</version>
         </dependency>
 
     </dependencies>
@@ -55,8 +56,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
                 <configuration>
-                    <source>25</source>
-                    <target>25</target>
+                    <!-- Ajustado para Java 21 também no plugin -->
+                    <source>21</source>
+                    <target>21</target>
                 </configuration>
             </plugin>
             <plugin>
