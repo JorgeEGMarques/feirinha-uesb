@@ -1,0 +1,30 @@
+services:
+  # Serviço do Banco de Dados
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password  # Senha de exemplo
+      POSTGRES_DB: feirinha_db     # Nome do banco que será criado
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Serviço da sua Aplicação Java
+  backend:
+    build: ./backend  # Procura o Dockerfile dentro da pasta backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+    environment:
+      # Essas variáveis ajudam a configurar, mas seu código Java precisa lê-las
+      DB_HOST: database
+      DB_NAME: feirinha_db
+      DB_USER: postgres
+      DB_PASS: password
+
+volumes:
+  postgres_data:
+  
