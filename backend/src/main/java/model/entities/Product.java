@@ -7,6 +7,7 @@ public class Product {
     private String name;
     private BigDecimal price;
     private String description;
+    private byte[] imagem;
 
     public Product(){}
     public Product(int code, String name, BigDecimal price, String description){
@@ -14,6 +15,14 @@ public class Product {
         this.name = name;
         this.price = price;
         this.description = description;
+    }
+
+    public Product(int code, String name, BigDecimal price, String description, byte[] imagem){
+        this.code = code;
+        this.name = name;
+        this.price = price;
+        this.description = description;
+        this.imagem = imagem;
     }
 
     public int getCode(){
@@ -32,6 +41,10 @@ public class Product {
         return description;
     }
 
+    public byte[] getImagem() {
+        return imagem;
+    }
+
     public void setCode(int code){
         this.code = code;
     }
@@ -46,5 +59,9 @@ public class Product {
 
     public void setDescription(String description){
         this.description = description;
+    }
+
+    public void setImagem(byte[] imagem) {
+        this.imagem = imagem;
     }
 }

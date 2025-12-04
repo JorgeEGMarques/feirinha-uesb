@@ -16,7 +16,7 @@ public class ProductDAO {
         
         // 2. SQL CORRIGIDO: Remova 'cod_produto' do INSERT.
         // O banco vai gerar esse valor.
-        String sql = "INSERT INTO public.produto (nome_produto, preco_produto, descricao_produto) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO public.produto (nome_produto, preco_produto, descricao_produto, imagem_produto) VALUES (?, ?, ?, ?)";
         
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -31,6 +31,11 @@ public class ProductDAO {
             stmt.setString(1, product.getName());
             stmt.setBigDecimal(2, product.getPrice());
             stmt.setString(3, product.getDescription());
+            if (product.getImagem() != null) {
+                stmt.setBytes(4, product.getImagem());
+            } else {
+                stmt.setNull(4, java.sql.Types.BINARY);
+            }
             
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected == 0) {
@@ -90,7 +95,7 @@ public class ProductDAO {
 
     // U - UPDATE (do doPut)
     public void update(Product product) throws SQLException {
-        String sql = "UPDATE public.produto SET nome_produto = ?, preco_produto = ?, descricao_produto = ? WHERE cod_produto = ?";
+        String sql = "UPDATE public.produto SET nome_produto = ?, preco_produto = ?, descricao_produto = ?, imagem_produto = ? WHERE cod_produto = ?";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -98,7 +103,12 @@ public class ProductDAO {
             stmt.setString(1, product.getName());
             stmt.setBigDecimal(2, product.getPrice());
             stmt.setString(3, product.getDescription());
-            stmt.setInt(4, product.getCode());
+            if (product.getImagem() != null) {
+                stmt.setBytes(4, product.getImagem());
+            } else {
+                stmt.setNull(4, java.sql.Types.BINARY);
+            }
+            stmt.setInt(5, product.getCode());
             
             stmt.executeUpdate();
         }
@@ -124,6 +134,8 @@ public class ProductDAO {
         p.setName(rs.getString("nome_produto"));
         p.setPrice(rs.getBigDecimal("preco_produto"));
         p.setDescription(rs.getString("descricao_produto"));
+        byte[] img = rs.getBytes("imagem_produto");
+        p.setImagem(img);
         return p;
     }
 }
