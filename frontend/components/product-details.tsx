@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"; // Importação adicionada
+import { useRouter } from "next/navigation"; // Importação adicionada
 import Image from "next/image"
 import { comment, product, profile } from "@/utils/types"
 import { Button } from "./ui/button";
@@ -13,7 +15,13 @@ interface ProductDetailsProps {
 }
 
 export const ProductDetail = ({ product, comments, profiles }: ProductDetailsProps) => {
+  const router = useRouter(); // Hook para recarregar a página
   const { items, addItem, removeItem } = useCartStore();
+  
+  // Estados do formulário de comentário
+  const [newCommentText, setNewCommentText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const cartItem = items.find((item) => item.code == product.code);
   const quantity = cartItem ? cartItem.quantity : 0;
 
@@ -27,13 +35,58 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
     })
   }
 
+  // Função para enviar o comentário
+  const handleSendComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommentText.trim()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      // Ajuste o objeto conforme seu backend espera.
+      // Baseado no seu código de leitura (c.texto), assumi que a chave é 'texto'.
+      const payload = {
+        texto: newCommentText, 
+        codProd: product.code,
+        cpfUsuario: "123.456.789-00", // TODO: Pegar do contexto de autenticação real
+        dataPostagem: new Date()
+      };
+
+      // Nota: Use NEXT_PUBLIC_ para variáveis de ambiente no client-side
+      const baseUrl = "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
+
+      const response = await fetch(`${baseUrl}/comentarios`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro: ${response.status}`);
+      }
+
+      // Sucesso
+      setNewCommentText(""); // Limpa o input
+      router.refresh(); // Atualiza a página para mostrar o novo comentário
+
+    } catch (error) {
+      console.error("Falha ao comentar:", error);
+      alert("Não foi possível enviar o comentário.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div>
       <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-center">
         <div className="relative h-96 w-full md:w-1/2 rounded-lg overflow-hidden">
           <Image
-            src={ imageConverter(product.imagem) }
-            alt={ product.name }
+            src={imageConverter(product.imagem)}
+            alt={product.name}
             fill={true}
             style={{ objectFit: 'cover' }}
             className="transition duration-300"
@@ -44,16 +97,16 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
         <div className="md:w-1/2">
           <h1 className="text-3xl font-bold mb-4"> {product.name} </h1>
 
-          { product.description && (
+          {product.description && (
             <p className="text-gray-700 mb-4">
               {product.description}
             </p>
-          ) }
+          )}
 
-          { product.price && (
-              <p className="text-lg font-semibold text-gray-900">
-                R${(product.price).toFixed(2)}
-              </p>
+          {product.price && (
+            <p className="text-lg font-semibold text-gray-900">
+              R${(product.price).toFixed(2)}
+            </p>
           )}
 
           <div className="flex items-center space-x-4">
@@ -63,11 +116,37 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
           </div>
         </div>
       </div>
-      <div className="space-y-6 mt-8">
+
+      <div className="space-y-6 mt-8 container mx-auto px-4"> {/* Adicionei container para alinhar margens */}
         <h3 className="text-xl font-bold text-gray-900 border-b pb-4">
           Avaliações dos Clientes
         </h3>
 
+        {/* --- Formulário de Novo Comentário --- */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
+          <h4 className="text-md font-semibold text-gray-800 mb-2">Deixe sua avaliação</h4>
+          <form onSubmit={handleSendComment}>
+            <textarea
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
+              rows={3}
+              placeholder="O que você achou deste produto?"
+              value={newCommentText}
+              onChange={(e) => setNewCommentText(e.target.value)}
+              disabled={isSubmitting}
+            />
+            <div className="mt-3 flex justify-end">
+              <Button 
+                type="submit" 
+                className="hover:cursor-pointer bg-indigo-600 hover:bg-indigo-700"
+                disabled={isSubmitting || !newCommentText.trim()}
+              >
+                {isSubmitting ? "Enviando..." : "Enviar Comentário"}
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        {/* --- Lista de Comentários --- */}
         {comments.length === 0 ? (
           <p className="text-gray-500 italic">Nenhum comentário ainda. Seja o primeiro a avaliar!</p>
         ) : (
@@ -88,7 +167,6 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
                       className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
                     />
                   ) : (
-                    // Fallback se não tiver foto (um círculo cinza com a inicial)
                     <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
                       {userName.charAt(0).toUpperCase()}
                     </div>
@@ -102,7 +180,6 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
                       {userName}
                     </h4>
                     <span className="text-xs text-gray-400">
-                      {/* Exemplo de data fictícia ou vinda do backend */}
                       Compra verificada
                     </span>
                   </div>
