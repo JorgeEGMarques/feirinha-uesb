@@ -1,10 +1,15 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Carousel } from "@/components/carousel";
 import { Button } from "@/components/ui/button";
+import { ProductGrid } from "@/components/product-grid";
+import { imageConverter } from "@/utils/image-converter";
 
 export default async function Home() {
-  const products = await fetch('http://localhost:3000/products')
+  // const products = await fetch('http://localhost:3000/products')
+  //   .then(response => response.json())
+  //   .catch(error => console.error('Error', error));
+
+  const products = await fetch(`${process.env.NEXT_PUBLIC_NGROK_URL}/products`)
     .then(response => response.json())
     .catch(error => console.error('Error', error));
 
@@ -34,7 +39,7 @@ export default async function Home() {
           </div>
           <Image
             alt="Hero Image"
-            src={products[0].src}
+            src={imageConverter(products[1].imagem)}
             className="rounded"
             width={450}
             height={450}
@@ -43,7 +48,7 @@ export default async function Home() {
         </div>
       </section>
       <section className="py-8">
-        <Carousel products={products}/>
+        <ProductGrid products={products}/>
       </section>
     </div>
   );

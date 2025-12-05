@@ -28,7 +28,7 @@ export default function CheckoutsPage() {
         <CardContent>
           <ul className="space-y-4">
             {items.map((item) => (
-              <li key={item.id} className="flex flex-col gap-2 border-b pb-2">
+              <li key={item.code} className="flex flex-col gap-2 border-b pb-2">
                 <div className="flex justify-between">
                   <span className="font-medium">{item.name}</span>
                   <span className="font-semibold">R${(item.price * item.quantity).toFixed(2)}</span>
@@ -37,7 +37,7 @@ export default function CheckoutsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => removeItem(item.code)}
                   >
                     –
                   </Button>

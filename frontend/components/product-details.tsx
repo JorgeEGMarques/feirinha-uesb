@@ -1,48 +1,29 @@
 "use client"
 
 import Image from "next/image"
-import { product } from "@/utils/types"
+import { comment, product, profile } from "@/utils/types"
 import { Button } from "./ui/button";
 import { useCartStore } from "@/store/cart-store";
 import { useEffect, useState } from "react";
+import { imageConverter } from "@/utils/image-converter";
 
 interface ProductDetailsProps {
-  product: product
+  product: product;
+  comments: comment[];
+  profiles: profile[];
 }
 
-export const ProductDetail = ({ product }: ProductDetailsProps) => {
+export const ProductDetail = ({ product, comments, profiles }: ProductDetailsProps) => {
   const { items, addItem, removeItem } = useCartStore();
-  const [comments, setComments] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const cartItem = items.find((item) => item.id === product.id);
+  const cartItem = items.find((item) => item.code == product.code);
   const quantity = cartItem ? cartItem.quantity : 0;
-
-  useEffect(() => {
-    const fetchData = async () => {
-        try {
-          const [commentsRes, profilesRes] = await Promise.all([
-            fetch('http://localhost:3000/comments').then(res => res.json()),
-            fetch('http://localhost:3000/profile').then(res => res.json())
-          ]) 
-          let comment = commentsRes.filter((a: any) => a.postId === product.id);
-
-          setComments(comment);
-          setUsers(profilesRes);
-        } catch (error) {
-          console.error("Erro ao buscar dados", error);
-        }
-    }
-
-    fetchData();
-  }, [product.id]);
-
   
   const onAddItem = () => {
     addItem({
-      id: product.id,
+      code: product.code,
       name: product.name,
       price: product.price as number,
-      imageUrl: product.src ? product.src : null,
+      imageUrl: product.imagem ? product.imagem : null,
       quantity: 1,
     })
   }
@@ -52,7 +33,7 @@ export const ProductDetail = ({ product }: ProductDetailsProps) => {
       <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-center">
         <div className="relative h-96 w-full md:w-1/2 rounded-lg overflow-hidden">
           <Image
-            src={ product.src }
+            src={ imageConverter(product.imagem) }
             alt={ product.name }
             fill={true}
             style={{ objectFit: 'cover' }}
@@ -72,12 +53,12 @@ export const ProductDetail = ({ product }: ProductDetailsProps) => {
 
           { product.price && (
               <p className="text-lg font-semibold text-gray-900">
-                R${(product.price)}
+                R${(product.price).toFixed(2)}
               </p>
           )}
 
           <div className="flex items-center space-x-4">
-            <Button variant="outline" className="hover:cursor-pointer" onClick={() => removeItem(product.id)}> -</Button>
+            <Button variant="outline" className="hover:cursor-pointer" onClick={() => removeItem(product.code)}> -</Button>
             <span className="text-lg font-semibold"> {quantity}</span>
             <Button className="hover:cursor-pointer" onClick={onAddItem}>+</Button>
           </div>
@@ -91,11 +72,10 @@ export const ProductDetail = ({ product }: ProductDetailsProps) => {
         {comments.length === 0 ? (
           <p className="text-gray-500 italic">Nenhum comentário ainda. Seja o primeiro a avaliar!</p>
         ) : (
-          comments.map((c: any) => {
-            // 1. Extraímos os dados antes do return para limpar o JSX
-            const user = users.find((u: any) => u.id === c.userId);
-            const userName = user?.name ?? "Cliente Anônimo";
-            const userAvatar = user?.src; // Se não tiver, trataremos no img
+          comments.map((c: comment) => {
+            const user = profiles.find((u: profile) => u.cpf === c.cpfUsuario);
+            const userName = user?.nome ?? "Cliente Anônimo";
+            const userAvatar = user?.fotoPerfil;
 
             return (
               <div key={c.id} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 transition-colors hover:bg-white hover:shadow-sm">
@@ -128,13 +108,8 @@ export const ProductDetail = ({ product }: ProductDetailsProps) => {
                     </span>
                   </div>
 
-                  {/* Estrelas (Exemplo Estático - idealmente viria do banco) */}
-                  <div className="flex text-yellow-400 text-xs mb-2">
-                    {"★".repeat(5)}
-                  </div>
-
                   <p className="text-gray-700 text-sm leading-relaxed">
-                    {c.text}
+                    {c.texto}
                   </p>
                 </div>
               </div>

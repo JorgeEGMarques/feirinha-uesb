@@ -5,48 +5,15 @@ import { User, Store } from 'lucide-react'; // Ícones para perfil e barracas
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
 import { useRouter } from 'next/navigation';
+import { product, profile, stock, tent } from '@/utils/types';
 
-// 1. Definição da interface para os dados de uma Barraca
-interface Item {
-  id: string;
-  estoque: number;
-}
-
-interface Barraca {
-  cod_barraca: string;
-  cpf_dono: string;
-  nome_barraca: string;
-  licensa_usuario: string;
-  lista_de_itens: Item[];
-}
-
-// 2. Definição da interface para os dados do Usuário
-interface UserProfile {
-  id: string;
-  login: string;
-  password: string;
-  name: string;
-  cpf: string;
-  src: string;
-}
-
-interface Produto {
-  id: string;
-  src: string;
-  name: string;
-  description: string;
-  price: number;
-}
-
-// 3. Definição da interface para a mensagem de status
 interface Message {
     type: 'error' | 'success';
     text: string;
 }
 
-
 // 5. Componente principal da página de Perfil (Agora o único exportado)
-export default function profile() {
+export default function Profile() {
     const router = useRouter();
     const { logout } = useAuthStore();
 
@@ -65,35 +32,35 @@ export default function profile() {
           }
 
           const [profilesRes, tentsRes, productsRes] = await Promise.all([
-            fetch('http://localhost:3000/profile').then(res => res.json()),
-            fetch('http://localhost:3000/tents').then(res => res.json()),
-            fetch('http://localhost:3000/products').then(res => res.json())
+            fetch(`${process.env.NEXT_PUBLIC_NGROK_URL}/usuarios`).then(res => res.json()),
+            fetch(`${process.env.NEXT_PUBLIC_NGROK_URL}/tents`).then(res => res.json()),
+            fetch(`${process.env.NEXT_PUBLIC_NGROK_URL}/prducts`).then(res => res.json())
           ]);
           
-          const user = profilesRes.find((a: UserProfile) => a.id === userId);
-          let tents = tentsRes.filter((a: Barraca) => a.cpf_dono === user?.cpf);
+          const user = profilesRes.find((u: profile) => u.cpf === userId);
+          let tents = tentsRes.filter((t: tent) => t.cpfHolder === user.cpf);
           
-          const mapaDeProdutos = new Map(productsRes.map((p: Produto) => [p.id, p]));
-          tents = tents.map((tent: Barraca) => ({
+          const mapaDeProdutos = new Map(productsRes.map((p: product) => [p.code, p]));
+          tents = tents.map((tent: tent) => ({
             ...tent,
-            lista_de_itens: tent.lista_de_itens.map((item: Item) => {
-              const detalhesDoProduto = mapaDeProdutos.get(item.id);
+            lista_de_itens: tent.items.map((item: stock) => {
+              const detalhesDoProduto = mapaDeProdutos.get(item.product.code);
               
               if (detalhesDoProduto) {
                 return {
                   ...detalhesDoProduto,
-                  estoque: item.estoque
+                  estoque: item.stockQuantity
                 };
               }
 
               // Fallback quando os detalhes do produto não existem
               return {
-                id: item.id,
-                src: '',
+                code: item.product.code,
+                imagem: '',
                 name: 'Produto desconhecido',
                 description: '',
                 price: 0,
-                estoque: item.estoque
+                estoque: item.stockQuantity
               };
             })
           }));

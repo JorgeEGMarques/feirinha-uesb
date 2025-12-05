@@ -5,17 +5,18 @@ import { LogIn, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
+import { profile } from '@/utils/types';
 
 interface Message {
   type: 'error' | 'success';
   text: string;
 }
 
-interface Profile {
-  id: string,
-  login: string,
-  password: string
-}
+// interface Profile {
+//   cpf: string,
+//   login: string,
+//   password: string
+// }
 
 export default function Login() {
   const router = useRouter();
@@ -36,12 +37,12 @@ export default function Login() {
       return;
     }
 
-    const profiles = await fetch('http://localhost:3000/profile')
+    const profiles = await fetch(`${process.env.NEXT_PUBLIC_NGROK_URL}/usuarios`)
     .then(response => response.json())
     .catch(error => console.error('Error', error));
 
-    if (profiles.find((a: Profile) => a.login === email)) {
-      let index = profiles.findIndex((a: Profile) => a.login === email);
+    if (profiles.find((p: profile) => p.email === email)) {
+      let index = profiles.findIndex((p: profile) => p.email === email);
 
       if (profiles[index].password === password) {
         loginAction(profiles[index].id)
