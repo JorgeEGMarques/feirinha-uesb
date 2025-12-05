@@ -61,7 +61,7 @@ export const NavBar = () => {
               <UserIcon className="h-6 w-6"/>
             </Link>
             :
-            <Link href={"/login"} className="w-5 hover:text-blue-600">
+            <Link href={"/login"} className="w-5 mr-5 hover:text-blue-600">
               Entrar
             </Link>
           }

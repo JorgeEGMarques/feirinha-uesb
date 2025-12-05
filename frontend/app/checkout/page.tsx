@@ -44,26 +44,27 @@ export default function CheckoutsPage() {
 
       const saleData = {
         userCode: userId,
-        saleDate: saleDate,
+        tentCode: 1,
         items: items.map(item => ({
-          productCode: Number(item.code), 
+          productCode: item.code,
           saleQuantity: item.quantity,
           salePrice: item.price
         }))
       }
 
-      const response = await fetch(`${process.env.NGROK_URL}/sales`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        },
-        body: JSON.stringify(saleData),
-      })
+      // const baseUrl = process.env.NEXT_PUBLIC_NGROK_URL || process.env.NGROK_URL || "http://localhost:8080/crud/api";
 
-      if (!response.ok) {
-        throw new Error('Falha ao registrar venda')
-      }
+      // const response = await fetch(`${baseUrl}/sales`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(saleData),
+      // })
+
+      // if (!response.ok) {
+      //   throw new Error('Falha ao registrar venda')
+      // }
 
       clearCart()
       router.push("/success")

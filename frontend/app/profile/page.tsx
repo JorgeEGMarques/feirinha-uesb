@@ -17,6 +17,7 @@ export default function Profile() {
   const router = useRouter();
   const { logout } = useAuthStore();
 
+  const [tentId, setTentId] = useState<number>(8);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [userTents, setUserTents] = useState<tent[]>([]); // Tipagem corrigida para array de tents
   const [loading, setLoading] = useState(true);
@@ -75,25 +76,7 @@ export default function Profile() {
       return;
     }
 
-    await fetch(`${process.env.NGROK_URL}/tents`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: newTentData.name,
-        userLicense: newTentData.userLicense,
-        cpfHolder: newTentData.cpfHolder,
-      })
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => console.log("success", data))
-    .catch(error => console.log('Error', error));
+    const baseUrl = "http://localhost:8080/crud/api";
 
     const newTent: tent = {
       code: Math.floor(Math.random() * 10000),
@@ -110,6 +93,10 @@ export default function Profile() {
     setNewTentData({ name: '', userLicense: '', cpfHolder: userProfile?.cpf || '' });
     setError('');
   };
+
+  const handleHistory = () => {
+    router.push('/history');
+  }
 
   const handleOpenEdit = (t: tent) => {
     // Fazemos uma cópia profunda para não alterar o estado visual antes de salvar
@@ -161,34 +148,13 @@ export default function Profile() {
   const handleSaveEdits = async () => {
     if (!editingTent) return;
 
-    try {
-      // Faz a requisição PUT para atualizar a barraca específica no backend
-      const response = await fetch(`https://anja-superethical-appeasedly.ngrok-free.dev/crud/api/tents/${editingTent.code}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true', // Cabeçalho importante para evitar tela de erro do ngrok
-        },
-        body: JSON.stringify(editingTent) // Envia o objeto da barraca completo com os itens atualizados
-      });
+    const baseUrl = process.env.NGROK_URL || "http://localhost:8080/crud/api";
 
-      if (!response.ok) {
-        throw new Error(`Erro na API: ${response.status}`);
-      }
-
-      // Se a API respondeu OK, atualizamos o estado local e o localStorage
-      const updatedTents = userTents.map(t => 
-          t.code === editingTent.code ? editingTent : t
-      );
-
-      updateLocalStorage(updatedTents);
-      setEditingTent(null); // Fecha o modal
-      console.log("Barraca atualizada com sucesso!");
-
-    } catch (error) {
-      console.error("Erro ao salvar alterações:", error);
-      alert("Houve um erro ao salvar as alterações. Verifique sua conexão.");
-    }
+    const updatedTents = userTents.map(t => 
+        t.code === editingTent.code ? editingTent : t
+    );
+    updateLocalStorage(updatedTents);
+    setEditingTent(null); // Fecha o modal
   };
 
 
@@ -211,6 +177,7 @@ export default function Profile() {
             </h1>
             <p className="mt-1 text-lg text-indigo-600 font-medium">{userProfile?.email}</p>
             <div className='flex flex-row justify-center md:justify-start gap-4 mt-4'>
+              <Button onClick={handleHistory} className="bg-indigo-600 hover:bg-indigo-500">Histórico</Button>
               <Button onClick={handleNewTent} className="bg-indigo-600 hover:bg-indigo-500">Adicionar Barraca</Button>
               <Button onClick={handleLogout} variant="destructive">Logout</Button>
             </div>
@@ -335,7 +302,7 @@ export default function Profile() {
                                     <textarea 
                                         rows={1}
                                         className="w-full p-2 border rounded text-sm"
-                                        value={item.product.description}
+                                        value={item.product.description ?? ""}
                                         onChange={(e) => handleUpdateItem(index, 'description', e.target.value)}
                                         placeholder="Descrição breve"
                                     />

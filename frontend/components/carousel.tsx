@@ -42,11 +42,11 @@ export const Carousel = ({ products }: Props) => {
         </div>
       )}
       <CardContent className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 hover:scale-105 transition-colors">
-        <CardTitle className="text-2xl md:text-3xl drop-shadow-md font-bold text-center text-white mb-2">
+        <CardTitle className="text-2xl md:text-3xl drop-shadow-lg font-bold text-center text-white mb-2">
             { currentProduct.name }
         </CardTitle>
         { price && (
-          <p className="text-lg font-semibold text-white">
+          <p className="text-lg drop-shadow-lg font-semibold text-white">
             R$ {price.toFixed(2).replace('.', ',')}
           </p>
         ) }

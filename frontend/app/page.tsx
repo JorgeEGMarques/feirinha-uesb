@@ -3,11 +3,24 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ProductGrid } from "@/components/product-grid";
 import { imageConverter } from "@/utils/image-converter";
+import { product } from "@/utils/types";
 
 export default async function Home() {
-  const products = await fetch(`${process.env.NGROK_URL}/products`)
-    .then(response => response.json())
-    .catch(error => console.error('Error', error));
+  const baseUrl = process.env.NGROK_URL ?? "http://localhost:8080/crud/api";
+  let products: product[] = [];
+
+  try {
+    const response = await fetch(`${baseUrl}/products`);
+    if (response.ok) {
+      products = await response.json();
+    } else {
+      console.error(`Failed to fetch products: ${response.status} ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error('Error fetching products:', error);
+  }
+
+  const heroImage = products.length > 0 ? products[0].imagem : null;
 
   return (
     <div>
@@ -35,7 +48,7 @@ export default async function Home() {
           </div>
           <Image
             alt="Hero Image"
-            src={imageConverter(products[0].imagem)}
+            src={imageConverter(heroImage)}
             className="rounded"
             width={450}
             height={450}
