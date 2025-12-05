@@ -5,18 +5,11 @@ import { LogIn, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
-import { profile } from '@/utils/types';
 
 interface Message {
   type: 'error' | 'success';
   text: string;
 }
-
-// interface Profile {
-//   cpf: string,
-//   login: string,
-//   password: string
-// }
 
 export default function Login() {
   const router = useRouter();
@@ -25,6 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState<string>('');
   const [message, setMessage] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isRegistering, setIsRegistering] = useState<boolean>(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,24 +31,61 @@ export default function Login() {
       return;
     }
 
-    const profiles = await fetch(`${process.env.NEXT_PUBLIC_NGROK_URL}/usuarios`)
-    .then(response => response.json())
-    .catch(error => console.error('Error', error));
-
-    if (profiles.find((p: profile) => p.email === email)) {
-      let index = profiles.findIndex((p: profile) => p.email === email);
-
-      if (profiles[index].password === password) {
-        loginAction(profiles[index].id)
-        setMessage({ type: 'success', text: 'Login bem-sucedido! Redirecionando...' });
-        router.push('/');
-        return
+    await fetch(`${process.env.NGROK_URL}/usuarios/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        senha: password
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    }
+      return response.json(); // Parse the JSON response from the server
+    })
+    .then(data => {
+      loginAction(JSON.stringify(data));
+      setMessage({ type: 'success', text: 'Login bem-sucedido! Redirecionando...' });
+      router.push('/');
+      return
+    })
+    .catch(error => console.log('Error', error));
     
     setMessage({ type: 'error', text: 'Email ou senha incorretos.' });
     setIsLoading(false);
 
+  };
+
+  const handleRegister = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (typeof window !== 'undefined') {
+      // await fetch(`${process.env.NGROK_URL}/usuarios`, {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     cpf: "2345678",
+      //     nome: "O Pensadoor",
+      //     telefone: "40028922",
+      //     email: "joaozinho@hotmal.com",
+      //     senha: "senha",
+      //     fotoPerfil: null
+      //   })
+      // })
+      // .then(response => {
+      //   if (!response.ok) {
+      //     throw new Error(`HTTP error! status: ${response.status}`);
+      //   }
+      //   return response.json(); // Parse the JSON response from the server
+      // })
+      // .then(data => console.log("success", data))
+      // .catch(error => console.log('Error', error));
+    }
   };
 
   const handleForgotPassword = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -144,6 +175,19 @@ export default function Login() {
                 onClick={handleForgotPassword} // Usando a nova função tipada
               >
                 Esqueceu a senha?
+              </a>
+            </div>
+          </div>
+  
+          {/* Opções (Cadastrar usuario) */}
+          <div className="flex items-center justify-end">
+            <div className="text-sm">
+              <a 
+                href="#" 
+                className="font-medium text-black-600 hover:text-gray-500 transition duration-150 ease-in-out"
+                onClick={handleRegister} // Usando a nova função tipada
+              >
+                Cadastrar-se
               </a>
             </div>
           </div>

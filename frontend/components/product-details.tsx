@@ -4,7 +4,6 @@ import Image from "next/image"
 import { comment, product, profile } from "@/utils/types"
 import { Button } from "./ui/button";
 import { useCartStore } from "@/store/cart-store";
-import { useEffect, useState } from "react";
 import { imageConverter } from "@/utils/image-converter";
 
 interface ProductDetailsProps {
@@ -17,7 +16,7 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
   const { items, addItem, removeItem } = useCartStore();
   const cartItem = items.find((item) => item.code == product.code);
   const quantity = cartItem ? cartItem.quantity : 0;
-  
+
   const onAddItem = () => {
     addItem({
       code: product.code,

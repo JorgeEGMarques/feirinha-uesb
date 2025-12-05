@@ -5,11 +5,7 @@ import { ProductGrid } from "@/components/product-grid";
 import { imageConverter } from "@/utils/image-converter";
 
 export default async function Home() {
-  // const products = await fetch('http://localhost:3000/products')
-  //   .then(response => response.json())
-  //   .catch(error => console.error('Error', error));
-
-  const products = await fetch(`${process.env.NEXT_PUBLIC_NGROK_URL}/products`)
+  const products = await fetch(`${process.env.NGROK_URL}/products`)
     .then(response => response.json())
     .catch(error => console.error('Error', error));
 
@@ -39,7 +35,7 @@ export default async function Home() {
           </div>
           <Image
             alt="Hero Image"
-            src={imageConverter(products[1].imagem)}
+            src={imageConverter(products[0].imagem)}
             className="rounded"
             width={450}
             height={450}
