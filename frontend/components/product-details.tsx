@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image"
 import { product } from "@/utils/types"
 import { Button } from "./ui/button"
@@ -112,8 +114,8 @@ export const ProductDetail = ({ product }: ProductDetailsProps) => {
       <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-center">
         <div className="relative h-96 w-full md:w-1/2 rounded-lg overflow-hidden border border-gray-200">
           <Image
-            src={ productSrc }
-            alt={ product.name }
+            src={imageConverter(product.imagem)}
+            alt={product.name}
             fill={true}
             style={{ objectFit: 'cover' }}
             className="transition duration-300"
@@ -124,16 +126,16 @@ export const ProductDetail = ({ product }: ProductDetailsProps) => {
         <div className="md:w-1/2">
           <h1 className="text-3xl font-bold mb-4"> {product.name} </h1>
 
-          { product.description && (
+          {product.description && (
             <p className="text-gray-700 mb-4">
               {product.description}
             </p>
-          ) }
+          )}
 
-          { product.price && (
-              <p className="text-lg font-semibold text-gray-900 mb-6">
-                R${(product.price)}
-              </p>
+          {product.price && (
+            <p className="text-lg font-semibold text-gray-900">
+              R${(product.price).toFixed(2)}
+            </p>
           )}
 
           <div className="flex items-center space-x-4">
@@ -190,34 +192,34 @@ export const ProductDetail = ({ product }: ProductDetailsProps) => {
                 return (
                 <div key={c.id} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 transition-colors hover:bg-white hover:shadow-md">
                     
-                    <div className="flex-shrink-0">
-                    {userAvatar ? (
-                        <img
-                        src={userAvatar}
-                        alt={userName}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                        />
-                    ) : (
-                        <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg border-2 border-white shadow-sm">
-                        {userName.charAt(0).toUpperCase()}
-                        </div>
-                    )}
-                    </div>
+                  <div className="flex-shrink-0">
+                  {userAvatar ? (
+                      <img
+                      src={userAvatar}
+                      alt={userName}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                      />
+                  ) : (
+                      <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg border-2 border-white shadow-sm">
+                      {userName.charAt(0).toUpperCase()}
+                      </div>
+                  )}
+                  </div>
 
-                    <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
+                   <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
                         <h4 className="font-semibold text-gray-900 text-sm md:text-base">
                         {userName}
                         </h4>
                         <div className="flex text-yellow-400 text-xs">
                             {"★".repeat(5)}
-                        </div>
+                       </div>
                     </div>
 
                     <p className="text-gray-700 text-sm leading-relaxed mt-1">
                         {c.text}
                     </p>
-                    </div>
+                  </div>
                 </div>
                 )
             })}

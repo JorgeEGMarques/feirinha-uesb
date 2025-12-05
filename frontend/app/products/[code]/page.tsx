@@ -14,7 +14,14 @@ export default async function ProductPage({ params }: { params: Promise<{ code: 
   const profiles = await fetch(`${process.env.NGROK_URL}/usuarios`)
     .then(response => response.json())
     .catch(error => console.log('Error'));
-    
+
+      return (
+    <div>
+      <ProductDetail product={product} comments={comments} profiles={profiles} />
+    </div>
+  )
+}
+
       // await fetch(`${process.env.NGROK_URL}/comentarios`, {
       //   method: 'POST',
       //   headers: {
@@ -32,10 +39,3 @@ export default async function ProductPage({ params }: { params: Promise<{ code: 
       //   console.log("success", data);
       // })
       // .catch(error => console.log('Error', error));
-
-      return (
-    <div>
-      <ProductDetail product={product} comments={comments} profiles={profiles} />
-    </div>
-  )
-}
