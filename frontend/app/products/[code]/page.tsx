@@ -17,8 +17,10 @@ export default async function ProductPage({ params }: { params: Promise<{ code: 
 
       return (
     <div>
-      <ProductDetail product={product} comments={comments} profiles={profiles} />
+      <ProductDetail product={product} />
     </div>
+
+    //  comments={comments} profiles={profiles}
   )
 }
 

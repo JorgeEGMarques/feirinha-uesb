@@ -1,16 +1,17 @@
 "use client"
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image"
-import { product } from "@/utils/types"
+import { comment, product, profile } from "@/utils/types"
 import { Button } from "./ui/button"
 import { useCartStore } from "@/store/cart-store"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { imageConverter } from "@/utils/image-converter"
 
 interface ProductDetailsProps {
-  product: product
+  product: product,
+  // comments: comment[],
+  // profiles: profile
 }
 
 export const ProductDetail = ({ product }: ProductDetailsProps) => {
@@ -22,7 +23,7 @@ export const ProductDetail = ({ product }: ProductDetailsProps) => {
   
   const [newCommentText, setNewCommentText] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const cartItem = items.find((item) => item.id === product.code) || items.find((item) => item.code === product.code)
+  const cartItem = items.find((item) => item.code === product.code) || items.find((item) => item.code === product.code)
   const quantity = cartItem ? cartItem.quantity : 0
   const productSrc = "https://placehold.co/600x400?text=Produto+Sem+Foto"
 
@@ -51,7 +52,6 @@ export const ProductDetail = ({ product }: ProductDetailsProps) => {
   
   const onAddItem = () => {
     addItem({
-      id: product.code, 
       code: product.code, 
       name: product.name,
       price: product.price as number,

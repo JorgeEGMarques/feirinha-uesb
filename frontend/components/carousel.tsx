@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardTitle } from "./ui/card"
 import Image from "next/image"
+import { product } from "@/utils/types"
+import { imageConverter } from "@/utils/image-converter"
 
 interface Props {
-  products: { src: string, price: number, name: string }[]
+  products: product[]
 }
 
 export const Carousel = ({ products }: Props) => {
   const [current, setCurrent] = useState<number>(0)
 
   useEffect(() => {
-    // Se não houver produtos ou só houver 1, não precisa girar
     if (!products || products.length <= 1) return; 
 
     const interval = setInterval(() => {
@@ -20,9 +21,8 @@ export const Carousel = ({ products }: Props) => {
     }, 3000)
 
     return () => clearInterval(interval);
-  }, [products.length]) // Dependência correta
+  }, [products.length])
 
-  // Se o array vier vazio por algum erro, não renderize nada para evitar crash
   if (!products || products.length === 0) return null;
 
   const currentProduct = products[current];
@@ -30,20 +30,18 @@ export const Carousel = ({ products }: Props) => {
   
   return(
     <Card className="relative overflow-hidden rounded-lg shadow-md border-gray-300">
-      { currentProduct.src && (
-        // Mudei h-80 para h-64 ou aspect-ratio para ficar melhor em colunas
+      { currentProduct.imagem && (
         <div className="relative h-64 w-full"> 
           <Image
             alt={ currentProduct.name }
-            src={ currentProduct.src }
+            src={ imageConverter(currentProduct.imagem) }
             fill={true}
             style={{ objectFit: 'cover' }}
-            className="transition-opacity duration-500 ease-in-out hover:scale-105" // Efeito de zoom suave
+            className="transition-opacity duration-500 ease-in-out hover:scale-105"
           />
         </div>
       )}
       <CardContent className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-50 hover:scale-105 transition-colors">
-        {/* Reduzi text-4xl para text-2xl para caber nas colunas */}
         <CardTitle className="text-2xl md:text-3xl drop-shadow-md font-bold text-center text-white mb-2">
             { currentProduct.name }
         </CardTitle>
