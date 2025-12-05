@@ -10,34 +10,34 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Classe de Acesso a Dados (DAO) para a entidade Pagamento.
+ * Responsável por realizar operações de CRUD na tabela 'pagamento'.
+ */
 public class PaymentDAO {
 
     /**
      * Cria um novo pagamento no banco de dados.
+     * 
+     * @param payment O objeto Payment contendo os dados a serem inseridos.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public void create(Payment payment) throws SQLException {
-        String sql = "INSERT INTO public.pagamento (id_venda, cod_reserva, cpf_comprador, cod_barraca, forma_pagamento, data_pagamento) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO public.pagamento (id_venda, cpf_comprador, cod_barraca, forma_pagamento, data_pagamento) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            // id_venda pode ser NULL
             if (payment.getSaleId() == null) {
                 stmt.setNull(1, java.sql.Types.INTEGER);
             } else {
                 stmt.setInt(1, payment.getSaleId());
             }
-
-            if (payment.getReservationCode() == null) {
-                 stmt.setNull(2, java.sql.Types.INTEGER);
-            } else {
-                 stmt.setInt(2, payment.getReservationCode());
-            }
             
-            stmt.setString(3, payment.getBuyerCpf());
-            stmt.setInt(4, payment.getTentCode());
-            stmt.setString(5, payment.getPaymentForm());
-            stmt.setObject(6, payment.getPaymentDate()); // setObject é o correto para LocalDate
+            stmt.setString(2, payment.getBuyerCpf());
+            stmt.setInt(3, payment.getTentCode());
+            stmt.setString(4, payment.getPaymentForm());
+            stmt.setObject(5, payment.getPaymentDate()); 
 
             int rows = stmt.executeUpdate();
             if (rows == 0) throw new SQLException("Falha ao criar pagamento, nenhuma linha afetada.");
@@ -54,6 +54,10 @@ public class PaymentDAO {
 
     /**
      * Busca um pagamento pelo ID.
+     * 
+     * @param id O ID do pagamento a ser buscado.
+     * @return O objeto Payment encontrado, ou null se não existir.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public Payment getById(int id) throws SQLException {
         Payment payment = null;
@@ -74,7 +78,10 @@ public class PaymentDAO {
     }
 
     /**
-     * Busca todos os pagamentos.
+     * Busca todos os pagamentos cadastrados.
+     * 
+     * @return Uma lista contendo todos os pagamentos.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public List<Payment> getAll() throws SQLException {
         List<Payment> payments = new ArrayList<>();
@@ -92,10 +99,13 @@ public class PaymentDAO {
     }
 
     /**
-     * Atualiza um pagamento. (Não é comum, mas completa o CRUD)
+     * Atualiza os dados de um pagamento existente.
+     * 
+     * @param payment O objeto Payment com os dados atualizados.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public void update(Payment payment) throws SQLException {
-        String sql = "UPDATE public.pagamento SET id_venda = ?, cod_reserva = ?, cpf_comprador = ?, cod_barraca = ?, forma_pagamento = ?, data_pagamento = ? WHERE id_pagamento = ?";
+        String sql = "UPDATE public.pagamento SET id_venda = ?, cpf_comprador = ?, cod_barraca = ?, forma_pagamento = ?, data_pagamento = ? WHERE id_pagamento = ?";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -105,16 +115,11 @@ public class PaymentDAO {
             } else {
                 stmt.setInt(1, payment.getSaleId());
             }
-            if (payment.getReservationCode() == null) {
-                 stmt.setNull(2, java.sql.Types.INTEGER);
-            } else {
-                 stmt.setInt(2, payment.getReservationCode());
-            }
-            stmt.setString(3, payment.getBuyerCpf());
-            stmt.setInt(4, payment.getTentCode());
-            stmt.setString(5, payment.getPaymentForm());
-            stmt.setObject(6, payment.getPaymentDate());
-            stmt.setInt(7, payment.getId()); // WHERE clause
+            stmt.setString(2, payment.getBuyerCpf());
+            stmt.setInt(3, payment.getTentCode());
+            stmt.setString(4, payment.getPaymentForm());
+            stmt.setObject(5, payment.getPaymentDate());
+            stmt.setInt(6, payment.getId()); 
             
             stmt.executeUpdate();
         }
@@ -122,25 +127,32 @@ public class PaymentDAO {
 
     /**
      * Deleta um pagamento pelo ID.
+     * 
+     * @param id O ID do pagamento a ser deletado.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
-    public void delete(int id) throws SQLException { // CORREÇÃO: Era 'String id'
+    public void delete(int id) throws SQLException {
         String sql = "DELETE FROM public.pagamento WHERE id_pagamento = ?";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setInt(1, id); // CORREÇÃO: Era 'setString'
+            stmt.setInt(1, id);
             stmt.executeUpdate();
         }
     }
 
-    // MÉTODO AJUDANTE
+    /**
+     * Método auxiliar para converter uma linha do ResultSet em um objeto Payment.
+     * 
+     * @param rs O ResultSet posicionado na linha a ser lida.
+     * @return O objeto Payment preenchido.
+     * @throws SQLException Se ocorrer um erro ao ler o ResultSet.
+     */
     private Payment mapRowToPayment(ResultSet rs) throws SQLException {
         Payment p = new Payment();
         p.setId(rs.getInt("id_pagamento"));
         p.setSaleId(rs.getObject("id_venda", Integer.class));
-        // CORREÇÃO: O modelo Payment usa 'Integer'
-        p.setReservationCode(rs.getObject("cod_reserva", Integer.class)); 
         p.setBuyerCpf(rs.getString("cpf_comprador"));
         p.setTentCode(rs.getInt("cod_barraca"));
         p.setPaymentForm(rs.getString("forma_pagamento"));

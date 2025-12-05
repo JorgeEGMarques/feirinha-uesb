@@ -8,10 +8,23 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-// Este filtro será aplicado a TODAS as requisições que começam com /api/*
+/**
+ * Filtro responsável por configurar o CORS (Cross-Origin Resource Sharing).
+ * Permite que o frontend (React) acesse a API backend de uma origem diferente.
+ * Aplicado a todas as requisições iniciadas por /api/*.
+ */
 @WebFilter("/api/*")
 public class CorsFilter implements Filter {
 
+    /**
+     * Intercepta a requisição para adicionar os cabeçalhos de CORS.
+     * 
+     * @param request A requisição do servlet.
+     * @param response A resposta do servlet.
+     * @param chain A cadeia de filtros.
+     * @throws IOException Se ocorrer um erro de I/O.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {

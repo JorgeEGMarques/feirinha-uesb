@@ -10,11 +10,18 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Classe de Acesso a Dados (DAO) para a entidade Venda.
+ * Responsável por realizar operações de CRUD na tabela 'venda' e 'item_venda'.
+ */
 public class SaleDAO {
 
     /**
      * Cria uma nova Venda e seus Itens em uma única transação.
      * Assume que o ID da Venda (sale.getId()) JÁ VEM no objeto.
+     * 
+     * @param sale O objeto Sale contendo os dados da venda e seus itens.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public void create(Sale sale) throws SQLException {
         
@@ -27,21 +34,19 @@ public class SaleDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-            conn.setAutoCommit(false); // Inicia transação
+            conn.setAutoCommit(false);
 
-            // --- PASSO 1: Salvar a Venda (Pai) --- (DB gera o id_venda)
             stmtSale = conn.prepareStatement(sqlSale, java.sql.Statement.RETURN_GENERATED_KEYS);
             
             stmtSale.setObject(1, sale.getSaleDate());
             stmtSale.setInt(2, sale.getTentCode());
-            stmtSale.setString(3, sale.getUserCode()); // Modelo usa String, SQL usa char(11). Correto.
+            stmtSale.setString(3, sale.getUserCode()); 
             
             int rowsAffected = stmtSale.executeUpdate();
             if (rowsAffected == 0) {
                 throw new SQLException("Falha ao criar venda, nenhuma linha afetada.");
             }
 
-            // --- PASSO 2: Ler o ID gerado e atualizar o objeto
             try (ResultSet generatedKeys = stmtSale.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     sale.setId(generatedKeys.getInt(1));
@@ -50,14 +55,13 @@ public class SaleDAO {
                 }
             }
 
-            // --- PASSO 3: Salvar os Itens (Filhos) ---
             if (sale.getItems() != null && !sale.getItems().isEmpty()) {
                 
                 stmtItem = conn.prepareStatement(sqlItem);
                 
                 for (SaleItem item : sale.getItems()) {
                     stmtItem.setInt(1, item.getProductCode());
-                    stmtItem.setInt(2, sale.getId()); // Usa o ID obtido do DB
+                    stmtItem.setInt(2, sale.getId());
                     stmtItem.setShort(3, item.getSaleQuantity());
                     stmtItem.setBigDecimal(4, item.getSalePrice());
                     stmtItem.addBatch();
@@ -65,11 +69,11 @@ public class SaleDAO {
                 stmtItem.executeBatch();
             }
 
-            conn.commit(); // Salva
+            conn.commit(); 
             
         } catch (SQLException e) {
             if (conn != null) {
-                conn.rollback(); // Desfaz
+                conn.rollback();
             }
             throw new SQLException("Erro de transação ao salvar Venda: " + e.getMessage(), e);
         } finally {
@@ -84,6 +88,10 @@ public class SaleDAO {
 
     /**
      * Busca uma Venda (e seus itens) pelo ID.
+     * 
+     * @param id O ID da venda a ser buscada.
+     * @return O objeto Sale encontrado, ou null se não existir.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public Sale getById(int id) throws SQLException {
         Sale sale = null;
@@ -93,21 +101,18 @@ public class SaleDAO {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmtSale = conn.prepareStatement(sqlSale);
              PreparedStatement stmtItems = conn.prepareStatement(sqlItems)) {
-            
-            // --- PASSO 1: Buscar a Venda (Pai) ---
+
             stmtSale.setInt(1, id);
             try (ResultSet rs = stmtSale.executeQuery()) {
                 if (rs.next()) {
                     sale = mapRowToSale(rs);
                 }
             }
-            
-            // --- PASSO 2: Buscar os Itens (Filhos) ---
+
             if (sale != null) {
                 stmtItems.setInt(1, id);
                 List<SaleItem> items = new ArrayList<>();
-                
-                // CORREÇÃO: Bloco estava faltando
+
                 try (ResultSet rsItems = stmtItems.executeQuery()) {
                     while (rsItems.next()) {
                         items.add(mapRowToSaleItem(rsItems)); 
@@ -120,7 +125,10 @@ public class SaleDAO {
     }
 
     /**
-     * Busca todas as Vendas (sem seus itens, para ser mais rápido).
+     * Busca todas as Vendas (com seus itens).
+     * 
+     * @return Uma lista contendo todas as vendas.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public List<Sale> getAll() throws SQLException {
         List<Sale> sales = new ArrayList<>();
@@ -131,14 +139,44 @@ public class SaleDAO {
              ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
-                sales.add(mapRowToSale(rs));
+                Sale sale = mapRowToSale(rs);
+                sale.setItems(getItemsForSale(sale.getId()));
+                sales.add(sale);
             }
         }
         return sales;
     }
+
+    /**
+     * Método auxiliar privado para buscar os itens de uma venda específica.
+     * 
+     * @param saleId O ID da venda.
+     * @return Uma lista de itens da venda.
+     */
+    private List<SaleItem> getItemsForSale(int saleId) {
+        List<SaleItem> items = new ArrayList<>();
+        String sql = "SELECT * FROM item_venda WHERE id_venda = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, saleId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    items.add(mapRowToSaleItem(rs));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace(); 
+        }
+        return items;
+    }
     
     /**
      * Deleta uma venda e seus itens (precisa de transação).
+     * 
+     * @param id O ID da venda a ser deletada.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public void delete(int id) throws SQLException { // CORREÇÃO: Era 'String id'
         String sqlItems = "DELETE FROM public.item_venda WHERE id_venda = ?";
@@ -150,22 +188,21 @@ public class SaleDAO {
 
         try {
             conn = DatabaseConnection.getConnection();
-            conn.setAutoCommit(false); // Inicia transação
+            conn.setAutoCommit(false);
 
-            // 1. Deleta os "Filhos" (item_venda)
             stmtItems = conn.prepareStatement(sqlItems);
             stmtItems.setInt(1, id);
             stmtItems.executeUpdate();
 
-            // 2. Deleta o "Pai" (venda)
             stmtSale = conn.prepareStatement(sqlSale);
-            stmtSale.setInt(1, id); // CORREÇÃO: Era 'setString'
+            stmtSale.setInt(1, id);
+
             stmtSale.executeUpdate();
             
-            conn.commit(); // Salva
+            conn.commit();
             
         } catch (SQLException e) {
-            if (conn != null) conn.rollback(); // Desfaz
+            if (conn != null) conn.rollback(); 
             throw new SQLException("Erro de transação ao deletar venda: " + e.getMessage(), e);
         } finally {
             if (stmtItems != null) stmtItems.close();
@@ -179,6 +216,9 @@ public class SaleDAO {
 
     /**
      * Atualiza uma Venda e substitui seus itens em uma transação.
+     * 
+     * @param sale O objeto Sale com os dados atualizados.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public void update(Sale sale) throws SQLException {
         String sqlUpdateSale = "UPDATE public.venda SET data_venda = ?, cod_barraca = ?, cod_usuario = ? WHERE id_venda = ?";
@@ -194,7 +234,6 @@ public class SaleDAO {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
 
-            // Update sale row
             stmtUpdate = conn.prepareStatement(sqlUpdateSale);
             stmtUpdate.setObject(1, sale.getSaleDate());
             stmtUpdate.setInt(2, sale.getTentCode());
@@ -202,12 +241,10 @@ public class SaleDAO {
             stmtUpdate.setInt(4, sale.getId());
             stmtUpdate.executeUpdate();
 
-            // Delete existing items
             stmtDeleteItems = conn.prepareStatement(sqlDeleteItems);
             stmtDeleteItems.setInt(1, sale.getId());
             stmtDeleteItems.executeUpdate();
 
-            // Insert new items (if any)
             if (sale.getItems() != null && !sale.getItems().isEmpty()) {
                 stmtInsertItem = conn.prepareStatement(sqlInsertItem);
                 for (model.entities.SaleItem item : sale.getItems()) {
@@ -235,7 +272,6 @@ public class SaleDAO {
         }
     }
     
-    // --- MÉTODO AJUDANTE (PAI) ---
     private Sale mapRowToSale(ResultSet rs) throws SQLException {
         Sale sale = new Sale();
         sale.setId(rs.getInt("id_venda"));
@@ -245,7 +281,6 @@ public class SaleDAO {
         return sale;
     }
 
-    // --- MÉTODO AJUDANTE (FILHO) ---
     private SaleItem mapRowToSaleItem(ResultSet rs) throws SQLException {
         SaleItem item = new SaleItem();
         item.setProductCode(rs.getInt("cod_prod"));

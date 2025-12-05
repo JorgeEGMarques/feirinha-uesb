@@ -16,21 +16,37 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 
+/**
+ * Servlet responsável por gerenciar as requisições HTTP relacionadas a Produtos.
+ * Mapeado para /api/products.
+ */
 @WebServlet(urlPatterns = {"/api/products", "/api/products/*"})
 public class ProductServlet extends HttpServlet {
 
     private ObjectMapper mapper;
     private ProductDAO productDAO;
 
+    /**
+     * Inicializa o servlet, configurando o ObjectMapper e o DAO.
+     * 
+     * @throws ServletException Se ocorrer um erro na inicialização.
+     */
     @Override
     public void init() throws ServletException {
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule()); 
         this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        this.productDAO = new ProductDAO(); // DAO é inicializado
+        this.productDAO = new ProductDAO(); 
     }
     
-    // Método ajudante para enviar erros
+    /**
+     * Método auxiliar para enviar erros na resposta HTTP.
+     * 
+     * @param resp A resposta HTTP.
+     * @param statusCode O código de status HTTP.
+     * @param message A mensagem de erro.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     private void sendError(HttpServletResponse resp, int statusCode, String message) throws IOException {
         resp.setStatus(statusCode);
         resp.setContentType("application/json");
@@ -38,26 +54,20 @@ public class ProductServlet extends HttpServlet {
         resp.getWriter().print("{\"erro\": \"" + message + "\"}");
     }
 
-
-    // --- CREATE (Criar) ---
-    // POST /api/products
+    /**
+     * Processa requisições HTTP POST para criar um novo produto.
+     * 
+     * @param req A requisição HTTP contendo o JSON do produto.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String jsonBody = req.getReader().lines().reduce("", (a, b) -> a + b);
 
         try {
             Product newProduct = mapper.readValue(jsonBody, Product.class);
-            
-            // --- VALIDAÇÃO (BARREIRA 1) ---
-            
-            // CORREÇÃO: Remova a validação do ID.
-            // O banco de dados agora gera o ID, então o 'code' do JSON será 0 (padrão)
-            // e isso é esperado.
-            /* if (newProduct.getCode() == 0) {
-                 sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'code' (cod_produto) é obrigatório.");
-                 return;
-            }
-            */
 
             if (newProduct.getName() == null || newProduct.getName().trim().isEmpty()) {
                  sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'name' (nome_produto) é obrigatório.");
@@ -71,19 +81,14 @@ public class ProductServlet extends HttpServlet {
                 sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'price' (preco_produto) deve ser maior que zero.");
                 return;
             }
-            // --- FIM DA VALIDAÇÃO ---
 
-
-            // --- LÓGICA DO BANCO (ATIVA) ---
-            // O DAO agora vai preencher o ID do newProduct
             productDAO.create(newProduct); 
 
             
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_CREATED); // 201
-            
-            // Envia o produto de volta, agora com o ID que o banco gerou
+            resp.setStatus(HttpServletResponse.SC_CREATED); 
+
             String jsonResposta = mapper.writeValueAsString(newProduct);
             resp.getWriter().print(jsonResposta);
 
@@ -96,9 +101,14 @@ public class ProductServlet extends HttpServlet {
         }
     }
 
-    // --- READ (Ler) ---
-    // GET /api/products  (Listar todos)
-    // GET /api/products/1 (Buscar por ID)
+    /**
+     * Processa requisições HTTP GET para listar produtos ou buscar por ID.
+     * 
+     * @param req A requisição HTTP.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         
@@ -108,12 +118,12 @@ public class ProductServlet extends HttpServlet {
 
         try {
             if (pathInfo == null || pathInfo.equals("/")) {
-                // --- Rota 1: Listar Todos (/api/products) ---
+
                 List<Product> products = productDAO.getAll();
                 resp.getWriter().print(mapper.writeValueAsString(products));
             
             } else {
-                // --- Rota 2: Buscar Um por ID (/api/products/1) ---
+
                 int id = Integer.parseInt(pathInfo.substring(1));
                 Product product = productDAO.getById(id);
                 
@@ -132,8 +142,14 @@ public class ProductServlet extends HttpServlet {
         }
     }
 
-    // --- UPDATE (Atualizar) ---
-    // PUT /api/products/1
+    /**
+     * Processa requisições HTTP PUT para atualizar um produto existente.
+     * 
+     * @param req A requisição HTTP contendo o ID na URL e o JSON do produto.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String pathInfo = req.getPathInfo();
@@ -149,14 +165,12 @@ public class ProductServlet extends HttpServlet {
             
             Product product = mapper.readValue(jsonBody, Product.class);
             product.setCode(id); 
-            
-            // (Validações do POST também deveriam estar aqui)
-            
+
             productDAO.update(product);
             
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_OK); // 200
+            resp.setStatus(HttpServletResponse.SC_OK); 
             resp.getWriter().print(mapper.writeValueAsString(product));
             
         } catch (NumberFormatException e) {
@@ -170,8 +184,14 @@ public class ProductServlet extends HttpServlet {
         }
     }
 
-    // --- DELETE (Apagar) ---
-    // DELETE /api/products/1
+    /**
+     * Processa requisições HTTP DELETE para remover um produto.
+     * 
+     * @param req A requisição HTTP contendo o ID na URL.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String pathInfo = req.getPathInfo();
@@ -184,7 +204,7 @@ public class ProductServlet extends HttpServlet {
         try {
             int id = Integer.parseInt(pathInfo.substring(1));
             productDAO.delete(id);
-            resp.setStatus(HttpServletResponse.SC_NO_CONTENT); // 204
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT);
             
         } catch (NumberFormatException e) {
             sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "ID de produto inválido.");

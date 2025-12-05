@@ -5,17 +5,25 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement; // 1. IMPORTAR O STATEMENT (Necessário para RETURN_GENERATED_KEYS)
+import java.sql.Statement; 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Classe de Acesso a Dados (DAO) para a entidade Produto.
+ * Responsável por realizar operações de CRUD na tabela 'produto'.
+ */
 public class ProductDAO {
 
-    // C - CREATE (Corrigido para colunas SERIAL / GENERATED ALWAYS)
+    /**
+     * Cria um novo produto no banco de dados.
+     * O ID do produto é gerado automaticamente pelo banco.
+     * 
+     * @param product O objeto Product contendo os dados a serem inseridos.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
+     */
     public void create(Product product) throws SQLException {
         
-        // 2. SQL CORRIGIDO: Remova 'cod_produto' do INSERT.
-        // O banco vai gerar esse valor.
         String sql = "INSERT INTO public.produto (nome_produto, preco_produto, descricao_produto, imagem_produto) VALUES (?, ?, ?, ?)";
         
         Connection conn = null;
@@ -24,10 +32,8 @@ public class ProductDAO {
         try {
             conn = DatabaseConnection.getConnection();
             
-            // 3. Peça ao banco para retornar o ID gerado (a chave)
             stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             
-            // 4. Mapeamento dos parâmetros (agora 3, não 4)
             stmt.setString(1, product.getName());
             stmt.setBigDecimal(2, product.getPrice());
             stmt.setString(3, product.getDescription());
@@ -42,10 +48,8 @@ public class ProductDAO {
                 throw new SQLException("Falha ao criar produto, nenhuma linha afetada.");
             }
 
-            // 5. Pegue o ID gerado pelo banco e atualize seu objeto Java
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
-                    // Use getInt() pois seu SQL 'cod_produto' é INT
                     product.setCode(generatedKeys.getInt(1)); 
                 } else {
                     throw new SQLException("Falha ao criar produto, não obteve o ID.");
@@ -53,13 +57,17 @@ public class ProductDAO {
             }
             
         } finally {
-            // Fechamento manual é necessário aqui por causa do generatedKeys
             if (stmt != null) stmt.close();
             if (conn != null) conn.close();
         }
     }
 
-    // R - READ (do doGet - Listar todos)
+    /**
+     * Busca todos os produtos cadastrados.
+     * 
+     * @return Uma lista contendo todos os produtos.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
+     */
     public List<Product> getAll() throws SQLException {
         List<Product> products = new ArrayList<>();
         String sql = "SELECT * FROM public.produto";
@@ -75,7 +83,13 @@ public class ProductDAO {
         return products;
     }
 
-    // R - READ (do doGet - Buscar um por ID)
+    /**
+     * Busca um produto pelo seu código (ID).
+     * 
+     * @param id O código do produto a ser buscado.
+     * @return O objeto Product encontrado, ou null se não existir.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
+     */
     public Product getById(int id) throws SQLException {
         String sql = "SELECT * FROM public.produto WHERE cod_produto = ?";
         
@@ -93,7 +107,12 @@ public class ProductDAO {
         return null;
     }
 
-    // U - UPDATE (do doPut)
+    /**
+     * Atualiza os dados de um produto existente.
+     * 
+     * @param product O objeto Product com os dados atualizados.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
+     */
     public void update(Product product) throws SQLException {
         String sql = "UPDATE public.produto SET nome_produto = ?, preco_produto = ?, descricao_produto = ?, imagem_produto = ? WHERE cod_produto = ?";
         
@@ -114,7 +133,12 @@ public class ProductDAO {
         }
     }
 
-    // D - DELETE (do doDelete)
+    /**
+     * Deleta um produto pelo seu código (ID).
+     * 
+     * @param id O código do produto a ser deletado.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
+     */
     public void delete(int id) throws SQLException {
         String sql = "DELETE FROM public.produto WHERE cod_produto = ?";
         
@@ -126,7 +150,13 @@ public class ProductDAO {
         }
     }
 
-    // MÉTODO AJUDANTE: Converte uma linha do ResultSet em um objeto Product
+    /**
+     * Método auxiliar para converter uma linha do ResultSet em um objeto Product.
+     * 
+     * @param rs O ResultSet posicionado na linha a ser lida.
+     * @return O objeto Product preenchido.
+     * @throws SQLException Se ocorrer um erro ao ler o ResultSet.
+     */
     private Product mapRowToProduct(ResultSet rs) throws SQLException {
         Product p = new Product(); 
         

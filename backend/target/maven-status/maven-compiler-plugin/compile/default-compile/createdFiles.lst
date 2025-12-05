@@ -22,6 +22,8 @@ model\entities\Sale.class
 controller\ReservationServlet.class
 model\entities\SaleItem.class
 HelloServlet.class
+controller\StockServlet.class
 dao\ProductDAO.class
 controller\ComentarioServlet.class
 CorsFilter.class
+dao\StockDAO.class

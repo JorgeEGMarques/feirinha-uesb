@@ -9,13 +9,19 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Classe de Acesso a Dados (DAO) para a entidade Barraca.
+ * Responsável por realizar operações de CRUD na tabela 'barraca'.
+ */
 public class TentDAO {
 
     /**
      * Cria uma nova barraca no banco de dados.
+     * 
+     * @param tent O objeto Tent contendo os dados a serem inseridos.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public void create(Tent tent) throws SQLException {
-        // CORREÇÃO: SQL estava faltando 'licensa_usuario'
         String sql = "INSERT INTO public.barraca (cod_barraca, cpf_dono, nome_barraca, licensa_usuario) VALUES (?, ?, ?, ?)";
         
         try (Connection conn = DatabaseConnection.getConnection();
@@ -24,7 +30,6 @@ public class TentDAO {
             stmt.setInt(1, tent.getCode());
             stmt.setString(2, tent.getCpfHolder());
             stmt.setString(3, tent.getName());
-            // CORREÇÃO: Parâmetro 4 estava faltando
             stmt.setBytes(4, tent.getUserLicense()); 
             
             stmt.executeUpdate();
@@ -33,6 +38,11 @@ public class TentDAO {
 
     /**
      * Busca uma barraca pelo ID.
+     * Também carrega os itens (estoque) associados à barraca.
+     * 
+     * @param id O código da barraca a ser buscada.
+     * @return O objeto Tent encontrado, ou null se não existir.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public Tent getById(int id) throws SQLException {
         Tent tent = null;
@@ -46,6 +56,8 @@ public class TentDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     tent = mapRowToTent(rs);
+                    StockDAO stockDAO = new StockDAO();
+                    tent.setItems(stockDAO.getByTentId(tent.getCode()));
                 }
             }
         }
@@ -53,7 +65,11 @@ public class TentDAO {
     }
 
     /**
-     * Busca todas as barracas.
+     * Busca todas as barracas cadastradas.
+     * Também carrega os itens (estoque) para cada barraca.
+     * 
+     * @return Uma lista contendo todas as barracas.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public List<Tent> getAll() throws SQLException {
         List<Tent> tents = new ArrayList<>();
@@ -63,18 +79,23 @@ public class TentDAO {
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             
+            StockDAO stockDAO = new StockDAO();
             while (rs.next()) {
-                tents.add(mapRowToTent(rs));
+                Tent tent = mapRowToTent(rs);
+                tent.setItems(stockDAO.getByTentId(tent.getCode()));
+                tents.add(tent);
             }
         }
         return tents;
     }
 
     /**
-     * Atualiza uma barraca (nome e licença).
+     * Atualiza os dados de uma barraca existente.
+     * 
+     * @param tent O objeto Tent com os dados atualizados.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public void update(Tent tent) throws SQLException {
-        // CORREÇÃO: SQL e parâmetros estavam errados
         String sql = "UPDATE public.barraca SET nome_barraca = ?, licensa_usuario = ?, cpf_dono = ? WHERE cod_barraca = ?";
         
         try (Connection conn = DatabaseConnection.getConnection();
@@ -83,7 +104,7 @@ public class TentDAO {
             stmt.setString(1, tent.getName());
             stmt.setBytes(2, tent.getUserLicense());
             stmt.setString(3, tent.getCpfHolder());
-            stmt.setInt(4, tent.getCode()); // Parâmetro do WHERE
+            stmt.setInt(4, tent.getCode()); 
             
             stmt.executeUpdate();
         }
@@ -91,30 +112,43 @@ public class TentDAO {
 
     /**
      * Deleta uma barraca pelo ID.
+     * 
+     * @param id O código da barraca a ser deletada.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
-    public void delete(int id) throws SQLException { // CORREÇÃO: Era 'String code'
+    public void delete(int id) throws SQLException {
         String sql = "DELETE FROM public.barraca WHERE cod_barraca = ?";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
-            stmt.setInt(1, id); // CORREÇÃO: Era 'setString'
+            stmt.setInt(1, id);
             stmt.executeUpdate();
         }
     }
 
-    // MÉTODO AJUDANTE: Mapeia a linha para o objeto
+    /**
+     * Método auxiliar para converter uma linha do ResultSet em um objeto Tent.
+     * 
+     * @param rs O ResultSet posicionado na linha a ser lida.
+     * @return O objeto Tent preenchido.
+     * @throws SQLException Se ocorrer um erro ao ler o ResultSet.
+     */
     private Tent mapRowToTent(ResultSet rs) throws SQLException {
         Tent t = new Tent();
         t.setCode(rs.getInt("cod_barraca"));
         t.setCpfHolder(rs.getString("cpf_dono"));
         t.setName(rs.getString("nome_barraca"));
-        // CORREÇÃO: Mapeamento estava faltando
         t.setUserLicense(rs.getBytes("licensa_usuario"));
         return t;
     }
 
-    // Este método vai INSERIR o estoque se não existir, ou ATUALIZAR se já existir.
+    /**
+     * Insere ou atualiza o estoque de um produto em uma barraca.
+     * 
+     * @param stockItem O objeto Stock contendo os dados do estoque.
+     * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
+     */
     public void updateStock(Stock stockItem) throws SQLException {
         String sql = "INSERT INTO public.estoque (cod_prod, cod_barraca, qntd_estoque) " +
                      "VALUES (?, ?, ?) " +
@@ -123,7 +157,6 @@ public class TentDAO {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            // CORREÇÃO: Modelo 'Stock' usa 'int', não 'long'
             stmt.setInt(1, stockItem.getProductCode());
             stmt.setInt(2, stockItem.getTentCode());
             stmt.setShort(3, stockItem.getStockQuantity());

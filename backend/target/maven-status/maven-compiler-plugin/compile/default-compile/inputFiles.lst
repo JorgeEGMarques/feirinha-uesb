@@ -3,6 +3,7 @@ C:\Users\rikca\Downloads\crud\backend\src\main\java\controller\PaymentServlet.ja
 C:\Users\rikca\Downloads\crud\backend\src\main\java\controller\ProductServlet.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\controller\ReservationServlet.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\controller\SaleServlet.java
+C:\Users\rikca\Downloads\crud\backend\src\main\java\controller\StockServlet.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\controller\TentServlet.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\controller\UserServlet.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\CorsFilter.java
@@ -12,6 +13,7 @@ C:\Users\rikca\Downloads\crud\backend\src\main\java\dao\PaymentDAO.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\dao\ProductDAO.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\dao\ReservationDAO.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\dao\SaleDAO.java
+C:\Users\rikca\Downloads\crud\backend\src\main\java\dao\StockDAO.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\dao\TentDAO.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\dao\UserDAO.java
 C:\Users\rikca\Downloads\crud\backend\src\main\java\HelloServlet.java

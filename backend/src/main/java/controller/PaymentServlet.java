@@ -1,6 +1,5 @@
 package controller;
 
-// Imports do Jackson (para JSON)
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -8,7 +7,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import dao.PaymentDAO;
 import model.entities.Payment;
 
-// Imports do Servlet (JAKARTA)
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -19,22 +17,37 @@ import java.sql.SQLException;
 import java.util.List;
 import java.io.IOException;
 
-@WebServlet(urlPatterns = {"/api/payments", "/api/payments/*"}) // URL em português
+/**
+ * Servlet responsável por gerenciar as requisições HTTP relacionadas a Pagamentos.
+ * Mapeado para /api/payments.
+ */
+@WebServlet(urlPatterns = {"/api/payments", "/api/payments/*"}) 
 public class PaymentServlet extends HttpServlet {
 
-    private ObjectMapper mapper; // 1. Mova a inicialização para o init()
+    private ObjectMapper mapper; 
     private PaymentDAO paymentDAO;
 
+    /**
+     * Inicializa o servlet, configurando o ObjectMapper e o DAO.
+     * 
+     * @throws ServletException Se ocorrer um erro na inicialização.
+     */
     @Override
     public void init() throws ServletException {
         this.mapper = new ObjectMapper();
         this.mapper.registerModule(new JavaTimeModule()); 
         this.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        this.paymentDAO = new PaymentDAO(); // DAO é inicializado
+        this.paymentDAO = new PaymentDAO(); 
     }
 
-    // --- CREATE (Criar) ---
-    // POST /api/payments
+    /**
+     * Processa requisições HTTP POST para criar um novo pagamento.
+     * 
+     * @param req A requisição HTTP contendo o JSON do pagamento.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String jsonBody = req.getReader().lines().reduce("", (a, b) -> a + b);
@@ -42,21 +55,17 @@ public class PaymentServlet extends HttpServlet {
         try {
             Payment newPayment = mapper.readValue(jsonBody, Payment.class);
             
-              // Validação (Barreira 1) - não exigir 'id' (gera o DB). Exigir campos obrigatórios mínimos.
               if (newPayment.getBuyerCpf() == null || newPayment.getPaymentForm() == null || newPayment.getPaymentDate() == null || newPayment.getTentCode() == null) {
-                  resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400
+                  resp.setStatus(HttpServletResponse.SC_BAD_REQUEST); 
                   resp.getWriter().print("{\"erro\": \"Falta de campos obrigatórios: cpf_comprador, forma_pagamento, data_pagamento, cod_barraca.\"}");
                   return;
               }
 
-            // --- LÓGICA DO BANCO (ATIVA) ---
             paymentDAO.create(newPayment); 
-
-            // --- FIM DA LÓGICA DO BANCO ---
             
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_CREATED); // 201
+            resp.setStatus(HttpServletResponse.SC_CREATED);
             
             String jsonResposta = mapper.writeValueAsString(newPayment);
             resp.getWriter().print(jsonResposta);
@@ -72,41 +81,39 @@ public class PaymentServlet extends HttpServlet {
         }
     }
 
-    // --- READ (Ler) ---
-    // GET /api/payments  (Listar todos)
-    // GET /api/payments/1 (Buscar por ID)
+    /**
+     * Processa requisições HTTP GET para listar pagamentos ou buscar por ID.
+     * 
+     * @param req A requisição HTTP.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         
-        String pathInfo = req.getPathInfo(); // Pega o que vem depois de "/api/payments"
+        String pathInfo = req.getPathInfo();
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
 
         try {
             if (pathInfo == null || pathInfo.equals("/")) {
-                // --- Rota 1: Listar Todos (/api/payments) ---
                 List<Payment> payments = paymentDAO.getAll();
                 resp.getWriter().print(mapper.writeValueAsString(payments));
             
             } else {
-                // --- Rota 2: Buscar Um por ID (/api/payments/1) ---
-                
-                // Extrai o "1" da URL "/1"
                 int id = Integer.parseInt(pathInfo.substring(1));
                 Payment payment = paymentDAO.getById(id);
                 
                 if (payment == null) {
-                    // Não encontrou
-                    resp.setStatus(HttpServletResponse.SC_NOT_FOUND); // 404
+                    resp.setStatus(HttpServletResponse.SC_NOT_FOUND); 
                     resp.getWriter().print("{\"erro\": \"Pagamento não encontrado\"}");
                 } else {
-                    // Encontrou, retorna o produto
-                    resp.setStatus(HttpServletResponse.SC_OK); // 200
+                    resp.setStatus(HttpServletResponse.SC_OK);
                     resp.getWriter().print(mapper.writeValueAsString(payment));
                 }
             }
         } catch (NumberFormatException e) {
-            // Se a URL for /api/payments/abc (inválido)
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().print("{\"erro\": \"ID de pagamento inválido.\"}");
         } catch (SQLException e) {
@@ -116,13 +123,18 @@ public class PaymentServlet extends HttpServlet {
         }
     }
 
-    // --- UPDATE (Atualizar) ---
-    // PUT /api/payments/1
+    /**
+     * Processa requisições HTTP PUT para atualizar um pagamento existente.
+     * 
+     * @param req A requisição HTTP contendo o ID na URL e o JSON do pagamento.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String pathInfo = req.getPathInfo();
         
-        // 1. PUT precisa de um ID na URL
         if (pathInfo == null || pathInfo.equals("/")) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             resp.getWriter().print("{\"erro\": \"É preciso informar o ID do pagamento na URL para atualizar.\"}");
@@ -134,19 +146,15 @@ public class PaymentServlet extends HttpServlet {
             String jsonBody = req.getReader().lines().reduce("", (a, b) -> a + b);
             
             Payment payment = mapper.readValue(jsonBody, Payment.class);
-            
-            // 2. Garante que o ID do objeto é o mesmo da URL
+
             payment.setId(id); 
-            
-            // 3. (Validação, igual ao POST - opcional mas recomendado)
-            
-            // 4. Chama o DAO
+
             paymentDAO.update(payment);
             
             resp.setContentType("application/json");
             resp.setCharacterEncoding("UTF-8");
-            resp.setStatus(HttpServletResponse.SC_OK); // 200
-            resp.getWriter().print(mapper.writeValueAsString(payment)); // Retorna o objeto atualizado
+            resp.setStatus(HttpServletResponse.SC_OK); 
+            resp.getWriter().print(mapper.writeValueAsString(payment)); 
             
         } catch (NumberFormatException e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -162,8 +170,14 @@ public class PaymentServlet extends HttpServlet {
         }
     }
 
-    // --- DELETE (Apagar) ---
-    // DELETE /api/payments/1
+    /**
+     * Processa requisições HTTP DELETE para remover um pagamento.
+     * 
+     * @param req A requisição HTTP contendo o ID na URL.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String pathInfo = req.getPathInfo();
@@ -176,12 +190,10 @@ public class PaymentServlet extends HttpServlet {
 
         try {
             int id = Integer.parseInt(pathInfo.substring(1));
-            
-            // Chama o DAO
+
             paymentDAO.delete(id);
-            
-            // Resposta de Delete não tem corpo (corpo vazio)
-            resp.setStatus(HttpServletResponse.SC_NO_CONTENT); // 204
+
+            resp.setStatus(HttpServletResponse.SC_NO_CONTENT); 
             
         } catch (NumberFormatException e) {
             resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);

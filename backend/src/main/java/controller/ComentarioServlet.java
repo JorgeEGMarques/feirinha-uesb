@@ -15,12 +15,21 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
+/**
+ * Servlet responsável por gerenciar as requisições HTTP relacionadas a Comentários.
+ * Mapeado para /api/comentarios.
+ */
 @WebServlet(urlPatterns = {"/api/comentarios", "/api/comentarios/*"})
 public class ComentarioServlet extends HttpServlet {
 
     private ObjectMapper mapper;
     private ComentarioDAO comentarioDAO;
 
+    /**
+     * Inicializa o servlet, configurando o ObjectMapper e o DAO.
+     * 
+     * @throws ServletException Se ocorrer um erro na inicialização.
+     */
     @Override
     public void init() throws ServletException {
         this.mapper = new ObjectMapper();
@@ -29,6 +38,14 @@ public class ComentarioServlet extends HttpServlet {
         this.comentarioDAO = new ComentarioDAO();
     }
 
+    /**
+     * Processa requisições HTTP POST para criar um novo comentário.
+     * 
+     * @param req A requisição HTTP contendo o JSON do comentário.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String body = req.getReader().lines().reduce("", (a,b)->a+b);
@@ -50,6 +67,18 @@ public class ComentarioServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Processa requisições HTTP GET para listar comentários ou buscar por ID.
+     * Suporta:
+     * - /api/comentarios: Lista todos os comentários.
+     * - /api/comentarios/produto/{id}: Lista comentários de um produto específico.
+     * - /api/comentarios/{id}: Busca um comentário pelo ID.
+     * 
+     * @param req A requisição HTTP.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String pathInfo = req.getPathInfo();
@@ -63,7 +92,6 @@ public class ComentarioServlet extends HttpServlet {
                 return;
             }
 
-            // /api/comentarios/produto/123
             if (pathInfo.startsWith("/produto/")) {
                 String idStr = pathInfo.substring("/produto/".length());
                 int prodId = Integer.parseInt(idStr);
@@ -72,7 +100,6 @@ public class ComentarioServlet extends HttpServlet {
                 return;
             }
 
-            // /api/comentarios/{id}
             String idStr = pathInfo.substring(1);
             int id = Integer.parseInt(idStr);
             Comentario c = comentarioDAO.getById(id);
@@ -93,6 +120,14 @@ public class ComentarioServlet extends HttpServlet {
         }
     }
 
+    /**
+     * Processa requisições HTTP DELETE para remover um comentário.
+     * 
+     * @param req A requisição HTTP contendo o ID na URL.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String pathInfo = req.getPathInfo();

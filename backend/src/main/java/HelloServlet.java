@@ -7,10 +7,23 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-// A anotação @WebServlet dispensa a configuração no web.xml
+/**
+ * Servlet simples para teste de conectividade da API.
+ * Retorna uma mensagem JSON fixa.
+ * Mapeado para /api/hello.
+ */
 @WebServlet("/api/hello")
 public class HelloServlet extends HttpServlet {
 
+    /**
+     * Processa requisições HTTP GET.
+     * Retorna um JSON com uma mensagem de boas-vindas.
+     * 
+     * @param req A requisição HTTP.
+     * @param resp A resposta HTTP.
+     * @throws ServletException Se ocorrer um erro no servlet.
+     * @throws IOException Se ocorrer um erro de I/O.
+     */
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         
