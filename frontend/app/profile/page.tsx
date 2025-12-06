@@ -1,407 +1,277 @@
 "use client"
 
 import { useEffect, useState } from 'react';
-import { User, Store, X, Pencil, Plus, Save } from 'lucide-react'; // Novos ícones importados
+import { User, Store, ShoppingBag, DollarSign, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
 import { useRouter } from 'next/navigation';
-import { product, profile, stock, tent } from '@/utils/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface NewTentForm {
-  name: string;
-  userLicense: string;
-  cpfHolder: string;
+// --- Interfaces ---
+
+interface Item {
+  id: string;
+  estoque: number;
+}
+
+interface Barraca {
+  cod_barraca: string;
+  cpf_dono: string;
+  nome_barraca: string;
+  licensa_usuario: string;
+  lista_de_itens: Item[];
 }
 
 interface UserProfile {
-  nome: string;
-  email: string;
+  id: string;
+  login: string;
+  password: string;
+  name: string;
   cpf: string;
-  fotoPerfil: string | null;
-  telefone: string;
-  senha: string;
-  tents: tent[];
+  src: string;
+}
+
+interface Produto {
+  id: string | number;
+  src: string;
+  name: string;
+  description: string;
+  price: number;
+}
+
+// Interfaces de Venda
+interface SaleItem {
+    productCode: number;
+    saleQuantity: number;
+    salePrice: number;
+}
+
+interface Sale {
+    id: number;
+    saleDate: string; // Vem como string ISO do JSON (LocalDate)
+    tentCode: number;
+    userCode: string;
+    items: SaleItem[];
 }
 
 export default function Profile() {
-  const router = useRouter();
-  const { logout } = useAuthStore();
+    const router = useRouter();
+    const { logout } = useAuthStore();
 
-  const [userProfile, setUserProfile] = useState<UserProfile>();
-  const [userTents, setUserTents] = useState<tent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTent, setEditingTent] = useState<tent | null>(null);
-  
-  const [error, setError] = useState('');
-  
-  const [newTentData, setNewTentData] = useState<NewTentForm>({
-    name: '',
-    userLicense: '',
-    cpfHolder: ''
-  });
-
-  useEffect(() => {
-    async function fetchData() {
-      const baseUrl = process.env.NGROK_URL || "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
-      const usuarios = await fetch(`${baseUrl}/usuarios`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        }
-      })
-        .then(response => response.json())
-        .catch(error => console.error('Error', error));
-      console.log('usuarios:', usuarios);
-    }
-
-    const storedData = localStorage.getItem("userData");
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [userTents, setUserTents] = useState<any[]>([]);
+    const [purchaseHistory, setPurchaseHistory] = useState<Sale[]>([]); // Histórico de Compras
+    const [salesHistory, setSalesHistory] = useState<Sale[]>([]);       // Histórico de Vendas (minhas barracas)
+    const [productsMap, setProductsMap] = useState<Map<any, Produto>>(new Map()); // Para acesso rápido aos nomes
     
-    if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        setUserProfile(parsedData);
-    }
-    setLoading(false);
+    const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          const userId = localStorage.getItem("userId");
 
-    fetchData();
-  }, []);
+          if (!userId) {
+            console.log("Usuário não logado");
+            return;
+          }
 
-  const updateLocalStorage = (tents: tent[]) => {
-    setUserTents(tents);
-
-    const storedData = localStorage.getItem("userData");
-    if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        parsedData.tents = tents;
-        localStorage.setItem("userData", JSON.stringify(parsedData));
-    }
-  };
-
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-  };
-
-  const handleNewTent = () => {
-    setError('');
-    setIsModalOpen(true);
-  };
-
-  const handleSaveTent = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newTentData.name.trim() || !newTentData.userLicense.trim() || !newTentData.cpfHolder.trim()) {
-      setError('Por favor, preencha todos os campos.');
-      return;
-    }
-
-    const baseUrl = "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
-
-    const newTent: any = {
-      name: newTentData.name,
-      userLicense: newTentData.userLicense,
-      cpfHolder: newTentData.cpfHolder,
-      items: [] 
-    };
-
-    await fetch(`${baseUrl}/tents`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newTent)
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {console.log("Success", data)})
-    .catch(error => {
-      console.log('Error', error)
-    });
-
-    const updatedTents = [...userTents, newTent];
-    updateLocalStorage(updatedTents);
-    
-    setIsModalOpen(false);
-    setNewTentData({ name: '', userLicense: '', cpfHolder: userProfile?.cpf || '' });
-    setError('');
-  };
-
-  const handleHistory = () => {
-    router.push('/history');
-  }
-
-  const handleOpenEdit = (t: tent) => {
-    // Fazemos uma cópia profunda para não alterar o estado visual antes de salvar
-    setEditingTent(JSON.parse(JSON.stringify(t))); 
-  };
-
-  // 2. Adiciona um novo item vazio à lista de itens da barraca em edição
-  const handleAddNewItem = async () => {
-    if (!editingTent) return;
-
-    const newProduct: any = {
-        name: "Novo Item",
-        description: "Descrição do item",
-        price: 0,
-        imagem: null
-    };
-
-    const newStockItem: any = {
-        tentCode: editingTent.code,
-        stockQuantity: 1,
-        product: newProduct
-    };
-
-    // const baseUrl = process.env.NGROK_URL || "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
-
-    // await fetch(`${baseUrl}/products`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(newStockItem)
-    // })
-    // .then(response => {
-    //   if (!response.ok) {
-    //     throw new Error(`HTTP error! status: ${response.status}`);
-    //   }
-    //   return response.json(); // Parse the JSON response from the server
-    // })
-    // .then(data => {
-    //   console.log("success", data);
-    // })
-    // .catch(error => console.log('Error', error));
-
-    setEditingTent({
-      ...editingTent,
-      items: [...editingTent.items, newStockItem]
-    });
-  };
-
-  // 3. Atualiza campos de um item existente (Nome, Descrição, Preço ou Estoque)
-  const handleUpdateItem = (index: number, field: string, value: string | number) => {
-    if (!editingTent) return;
-
-    const updatedItems = [...editingTent.items];
-    const itemToUpdate = updatedItems[index];
-
-    if (field === 'stockQuantity') {
-        // Atualiza a quantidade no objeto Stock
-        itemToUpdate.stockQuantity = Number(value);
-    } else {
-        // Atualiza propriedades dentro do objeto Product (Nome, Preço, Descrição)
-        (itemToUpdate.product as any)[field] = value;
-    }
-
-    setEditingTent({ ...editingTent, items: updatedItems });
-  };
-
-  // 4. Salva as alterações da edição no estado principal e no LocalStorage
-  const handleSaveEdits = async () => {
-    if (!editingTent) return;
-
-    const updatedTents = userTents.map(t => 
-        t.code === editingTent.code ? editingTent : t
-    );
-    updateLocalStorage(updatedTents);
-    setEditingTent(null); // Fecha o modal
-  };
-
-
-  if (loading) return <div className="flex h-screen items-center justify-center">Carregando perfil...</div>;
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-8 flex justify-center relative">
-      <div className="w-full max-w-4xl space-y-8">
-
-        {/* --- Cartão de Perfil --- */}
-        <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
-          <div className="flex-shrink-0">
-              <div className="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-500">Sem Foto</span>
-              </div>
-          </div>
-          <div className="text-center md:text-left flex-grow">
-            <h1 className="text-3xl font-extrabold text-gray-900 flex items-center justify-center md:justify-start">
-                 <User className="w-6 h-6 text-indigo-600 mr-2" /> {userProfile?.nome}
-            </h1>
-            <p className="mt-1 text-lg text-indigo-600 font-medium">{userProfile?.email}</p>
-            <div className='flex flex-row justify-center md:justify-start gap-4 mt-4'>
-              <Button onClick={handleHistory} className="bg-indigo-600 hover:bg-indigo-500">Histórico</Button>
-              <Button onClick={handleNewTent} className="bg-indigo-600 hover:bg-indigo-500">Adicionar Barraca</Button>
-              <Button onClick={handleLogout} variant="destructive">Logout</Button>
-            </div>
-          </div>
-        </div>
-
-        {/* --- Lista de Barracas --- */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-            <Store className="w-6 h-6 text-pink-500 mr-2" /> Minhas Barracas ({userTents.length})
-          </h2>
+          // Busca todos os dados necessários
+          const [profilesRes, tentsRes, productsRes, salesRes] = await Promise.all([
+            fetch('http://localhost:3000/profile').then(res => res.json()),
+            fetch('http://localhost:3000/tents').then(res => res.json()),
+            fetch('http://localhost:3000/products').then(res => res.json()),
+            // Se estiver usando o backend Java, pode usar os filtros específicos:
+            // fetch(`http://localhost:8080/crud/api/sales?userId=${userId}`)
+            // Aqui buscamos 'sales' genérico para filtrar no front por compatibilidade com mock
+            fetch('http://localhost:3000/sales').then(res => res.ok ? res.json() : []) 
+          ]);
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {userTents.map((t: tent) => (
-              <div key={t.code} className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-pink-500 relative hover:shadow-xl transition">
-                
-                {/* Cabeçalho do Card da Barraca */}
-                <div className='flex justify-between items-start mb-4'>
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800">{t.name}</h3>
-                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Licença: {t.userLicense}</span>
-                  </div>
-                  {/* Botão de Editar Barraca */}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => handleOpenEdit(t)}
-                    className="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
-                  >
-                    <Pencil className="w-5 h-5" />
-                  </Button>
-                </div>
-                
-                {/* Listagem Resumida de Itens */}
-                {(!t.items || t.items.length === 0) ? (
-                   <p className="text-sm text-gray-400">Nenhum produto cadastrado.</p>
+          // 1. Configurar Usuário
+          const user = profilesRes.find((a: UserProfile) => a.id === userId);
+          if (!user) return;
+          setUserProfile(user);
+
+          // 2. Mapa de Produtos (ID -> Objeto) para acesso rápido
+          const mapa = new Map(productsRes.map((p: Produto) => [String(p.id), p]));
+          setProductsMap(mapa);
+
+          // 3. Configurar Barracas do Usuário
+          let tents = tentsRes.filter((a: Barraca) => a.cpf_dono === user.cpf);
+          
+          // Enriquecer barracas com dados dos produtos
+          const enrichedTents = tents.map((tent: Barraca) => ({
+            ...tent,
+            lista_de_itens: tent.lista_de_itens.map((item: Item) => {
+              const detalhes = mapa.get(String(item.id));
+              return detalhes ? { ...detalhes, estoque: item.estoque } : { ...item, name: 'Item desc.' };
+            })
+          }));
+          setUserTents(enrichedTents);
+
+          // 4. Lógica de Históricos (Compras e Vendas)
+          const allSales: Sale[] = Array.isArray(salesRes) ? salesRes : [];
+
+          // Histórico de COMPRAS: Onde userCode == meu CPF
+          const myPurchases = allSales.filter(s => s.userCode === user.cpf);
+          setPurchaseHistory(myPurchases);
+
+          // Histórico de VENDAS: Onde tentCode é uma das minhas barracas
+          const myTentIds = tents.map((t: Barraca) => Number(t.cod_barraca));
+          const mySales = allSales.filter(s => myTentIds.includes(s.tentCode));
+          setSalesHistory(mySales);
+
+        } catch (error) {
+          console.error("Erro ao buscar dados", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }, []);
+
+    const handleButtonClick = () => {
+      logout();
+      router.push('/');
+    };
+
+    // Função auxiliar para calcular total da venda
+    const calculateTotal = (items: SaleItem[]) => {
+        return items.reduce((acc, item) => acc + (item.salePrice * item.saleQuantity), 0);
+    };
+
+    // Componente auxiliar para renderizar lista de vendas
+    const SalesList = ({ sales, title, icon: Icon, emptyMsg, isSales }: any) => (
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle className="flex items-center text-xl">
+                    <Icon className="w-5 h-5 mr-2" />
+                    {title} ({sales.length})
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 max-h-96 overflow-y-auto">
+                {sales.length === 0 ? (
+                    <p className="text-gray-500 italic">{emptyMsg}</p>
                 ) : (
-                  <div className="space-y-3">
-                     {t.items.slice(0, 3).map((s: stock) => ( // Mostra apenas os 3 primeiros
-                      <div key={s.productCode} className="flex justify-between text-sm border-b border-gray-100 pb-1">
-                          <span className="text-gray-700 font-medium">{s.product.name}</span>
-                          <span className="text-gray-500">Qtd: {s.stockQuantity}</span>
-                      </div>
-                     ))}
-                     {t.items.length > 3 && <p className="text-xs text-center text-gray-400">e mais {t.items.length - 3} itens...</p>}
-                  </div>
+                    sales.map((sale: Sale) => (
+                        <div key={sale.id} className="border-b pb-4 last:border-0">
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <div className="flex items-center text-sm text-gray-500">
+                                        <Calendar className="w-4 h-4 mr-1" />
+                                        {/* Formatação da data */}
+                                        {new Date(sale.saleDate).toLocaleDateString()}
+                                    </div>
+                                    <div className="text-xs text-gray-400">ID Venda: #{sale.id}</div>
+                                    {isSales && <div className="text-xs font-bold text-gray-600">Barraca: #{sale.tentCode}</div>}
+                                </div>
+                                <div className="text-right">
+                                    <span className={`font-bold text-lg ${isSales ? 'text-green-600' : 'text-red-600'}`}>
+                                        {isSales ? '+ ' : '- '}
+                                        R$ {calculateTotal(sale.items).toFixed(2)}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            {/* Itens da venda */}
+                            <div className="bg-gray-50 p-2 rounded text-sm space-y-1">
+                                {sale.items.map((item, idx) => {
+                                    const prod = productsMap.get(String(item.productCode));
+                                    return (
+                                        <div key={idx} className="flex justify-between">
+                                            <span>{item.saleQuantity}x {prod?.name || `Prod #${item.productCode}`}</span>
+                                            <span className="text-gray-600">R$ {item.salePrice.toFixed(2)}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    ))
                 )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+            </CardContent>
+        </Card>
+    );
 
-      {/* --- MODAL DE CRIAR NOVA BARRACA --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold">Nova Barraca</h3>
-                <button onClick={() => setIsModalOpen(false)}><X className="w-6 h-6 text-gray-500" /></button>
-            </div>
-            <form onSubmit={handleSaveTent} className="space-y-4">
-              {error && <div className="text-red-600 text-sm">{error}</div>}
-              <input type="text" className="w-full p-2 border rounded" placeholder="Nome da Barraca" value={newTentData.name} onChange={(e) => setNewTentData({...newTentData, name: e.target.value})} />
-              <input type="text" className="w-full p-2 border rounded" placeholder="Licença" value={newTentData.userLicense} onChange={(e) => setNewTentData({...newTentData, userLicense: e.target.value})} />
-              <input type="text" className="w-full p-2 border rounded" placeholder="CPF Responsável" value={newTentData.cpfHolder} onChange={(e) => setNewTentData({...newTentData, cpfHolder: e.target.value})} />
-              <Button type="submit" className="w-full bg-indigo-600">Criar Barraca</Button>
-            </form>
-          </div>
-        </div>
-      )}
+    if (loading) return <div className="flex justify-center items-center h-screen">Carregando perfil...</div>
 
-      {/* --- MODAL DE EDITAR BARRACA (Gerenciar Itens) --- */}
-      {editingTent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-            
-            {/* Header do Modal */}
-            <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center flex-shrink-0">
-              <h3 className="text-lg font-bold text-white flex items-center">
-                <Pencil className="w-5 h-5 mr-2" /> Editando: {editingTent.name}
-              </h3>
-              <button onClick={() => setEditingTent(null)} className="text-white hover:text-gray-200">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+    return (
+        <div className="min-h-screen bg-gray-50 p-4 sm:p-8 flex justify-center">
+            <div className="w-full max-w-5xl space-y-8">
 
-            {/* Corpo com Scroll */}
-            <div className="p-6 overflow-y-auto flex-grow bg-gray-50">
-                
-                <div className="flex justify-between items-center mb-4">
-                    <h4 className="font-semibold text-gray-700">Itens e Estoque</h4>
-                    <Button onClick={handleAddNewItem} size="sm" className="bg-green-600 hover:bg-green-500">
-                        <Plus className="w-4 h-4 mr-1" /> Novo Item
-                    </Button>
+                {/* --- Cabeçalho do Perfil --- */}
+                {userProfile && (
+                    <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100 flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
+                        <div className="flex-shrink-0">
+                            <img
+                                className="h-32 w-32 rounded-full object-cover border-4 border-indigo-200 shadow-md"
+                                src={userProfile.src}
+                                alt={userProfile.name}
+                                onError={(e) => { (e.target as HTMLImageElement).src = "https://placehold.co/128x128?text=User" }}
+                            />
+                        </div>
+                        <div className="text-center md:text-left flex-grow">
+                            <h1 className="text-3xl font-extrabold text-gray-900">{userProfile.name}</h1>
+                            <p className="mt-1 text-lg text-indigo-600 font-medium">{userProfile.login}</p>
+                            <p className="mt-2 text-sm text-gray-500">CPF: {userProfile.cpf}</p>
+                            <Button className="mt-4 bg-red-500 hover:bg-red-600" onClick={handleButtonClick}>
+                                Sair
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- Grid de Históricos --- */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Histórico de Compras (Usuário comprou) */}
+                    <SalesList 
+                        sales={purchaseHistory} 
+                        title="Minhas Compras" 
+                        icon={ShoppingBag} 
+                        emptyMsg="Você ainda não realizou compras."
+                        isSales={false} 
+                    />
+
+                    {/* Histórico de Vendas (Usuário vendeu nas barracas) */}
+                    <SalesList 
+                        sales={salesHistory} 
+                        title="Vendas das Minhas Barracas" 
+                        icon={DollarSign} 
+                        emptyMsg="Nenhuma venda registrada em suas barracas."
+                        isSales={true} 
+                    />
                 </div>
 
-                {editingTent.items.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
-                        Nenhum item nesta barraca. Adicione um novo item acima.
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {editingTent.items.map((item, index) => (
-                            <div key={item.productCode} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-                                
-                                {/* Coluna 1: Dados Básicos */}
-                                <div className="md:col-span-4 space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Nome do Produto</label>
-                                    <input 
-                                        type="text" 
-                                        className="w-full p-2 border rounded text-sm font-semibold"
-                                        value={item.product.name}
-                                        onChange={(e) => handleUpdateItem(index, 'name', e.target.value)}
-                                        placeholder="Nome do Item"
-                                    />
-                                </div>
-
-                                {/* Coluna 2: Descrição */}
-                                <div className="md:col-span-4 space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Descrição</label>
-                                    <textarea 
-                                        rows={1}
-                                        className="w-full p-2 border rounded text-sm"
-                                        value={item.product.description ?? ""}
-                                        onChange={(e) => handleUpdateItem(index, 'description', e.target.value)}
-                                        placeholder="Descrição breve"
-                                    />
-                                </div>
-
-                                {/* Coluna 3: Preço e Estoque */}
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Preço (R$)</label>
-                                    <input 
-                                        type="number" 
-                                        className="w-full p-2 border rounded text-sm"
-                                        value={item.product.price}
-                                        onChange={(e) => handleUpdateItem(index, 'price', parseFloat(e.target.value))}
-                                        placeholder="0.00"
-                                    />
-                                </div>
-
-                                <div className="md:col-span-2 space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Estoque</label>
-                                    <input 
-                                        type="number" 
-                                        className="w-full p-2 border rounded text-sm bg-indigo-50 font-bold text-indigo-700"
-                                        value={item.stockQuantity}
-                                        onChange={(e) => handleUpdateItem(index, 'stockQuantity', parseInt(e.target.value))}
-                                    />
+                {/* --- Minhas Barracas --- */}
+                <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+                        <Store className="w-6 h-6 text-pink-500 mr-2" />
+                        Gerenciar Estoque ({userTents.length})
+                    </h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {userTents.map((b: any) => (
+                            <div key={b.cod_barraca} className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-pink-500">
+                                <h3 className="font-bold text-lg mb-2">{b.nome_barraca}</h3>
+                                <div className="space-y-4">
+                                    {b.lista_de_itens.map((p: any) => (
+                                        <div key={p.id} className="flex justify-between items-center border-b pb-2 last:border-0">
+                                            <div>
+                                                <div className="font-semibold text-gray-900">{p.name}</div>
+                                                <div className="text-sm text-gray-500">{p.description}</div>
+                                            </div>
+                                            <div className="text-sm bg-gray-100 px-2 py-1 rounded">
+                                                Estoque: {p.estoque}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         ))}
                     </div>
-                )}
-            </div>
+                </div>
 
-            {/* Footer Fixo */}
-            <div className="p-4 bg-white border-t flex justify-end space-x-3 flex-shrink-0">
-                <Button variant="outline" onClick={() => setEditingTent(null)}>Cancelar</Button>
-                <Button onClick={handleSaveEdits} className="bg-indigo-600 hover:bg-indigo-500">
-                    <Save className="w-4 h-4 mr-2" /> Salvar Alterações
-                </Button>
             </div>
-          </div>
         </div>
-      )}
-
-    </div>
-  );
+    );
 }
