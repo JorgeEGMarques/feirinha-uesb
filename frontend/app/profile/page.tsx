@@ -1,0 +1,436 @@
+"use client"
+
+import { useEffect, useState } from 'react';
+import { User, Store, X, Pencil, Plus, Save } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/store/auth-store';
+import { useRouter } from 'next/navigation';
+import { product, profile, stock, tent } from '@/utils/types';
+
+interface NewTentForm {
+  name: string;
+  userLicense: string;
+  cpfHolder: string;
+}
+
+export default function Profile() {
+  const router = useRouter();
+  const { logout } = useAuthStore();
+
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTent, setEditingTent] = useState<tent | null>(null);
+  
+  const [error, setError] = useState('');
+  
+  const [newTentData, setNewTentData] = useState<NewTentForm>({
+    name: '',
+    userLicense: '',
+    cpfHolder: ''
+  });
+
+  useEffect(() => {
+    async function fetchData(cpf: string) {
+      const baseUrl = process.env.NGROK_URL || `https://anja-superethical-appeasedly.ngrok-free.dev/crud/api/`;
+      const usuario = await fetch(`${baseUrl}/usuarios/${cpf}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      })
+        .then(response => response.json())
+        .catch(error => console.error('Error', error));
+
+      setUser(usuario);
+    }
+
+    const storedData = localStorage.getItem("userData");
+    
+    if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        fetchData(parsedData.cpf);
+    }
+    setLoading(false);
+  }, []);
+
+  const updateLocalStorage = (tents: tent[]) => {
+    const storedData = localStorage.getItem("userData");
+    if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        parsedData.tents = tents;
+        localStorage.setItem("userData", JSON.stringify(parsedData));
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
+
+  const handleNewTent = () => {
+    setError('');
+    setIsModalOpen(true);
+  };
+
+  const handleSaveTent = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newTentData.name.trim() || !newTentData.userLicense.trim() || !newTentData.cpfHolder.trim()) {
+      setError('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    const baseUrl = "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
+
+    const newTent: any = {
+      name: newTentData.name,
+      userLicense: newTentData.userLicense,
+      cpfHolder: newTentData.cpfHolder,
+      items: [] 
+    };
+
+    await fetch(`${baseUrl}/tents`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newTent)
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {console.log("Success", data)})
+    .catch(error => {
+      console.log('Error', error)
+    });
+
+    const updatedTents = [...user?.tents, newTent];
+    updateLocalStorage(updatedTents);
+    
+    setIsModalOpen(false);
+    setNewTentData({ name: '', userLicense: '', cpfHolder: user?.cpf || '' });
+    setError('');
+  };
+
+  const handleHistory = () => {
+    router.push('/history');
+  }
+
+  const handleOpenEdit = (t: tent) => {
+    setEditingTent(JSON.parse(JSON.stringify(t))); 
+  };
+
+  const handleAddNewItem = async () => {
+    if (!editingTent) return;
+
+    const newProduct: any = {
+        name: "Novo Item",
+        description: "Descrição do item",
+        price: 0,
+        imagem: null
+    };
+
+    const newStockItem: any = {
+        tentCode: editingTent.code,
+        stockQuantity: 1,
+        product: newProduct,
+        isNew: true
+    };
+
+    setEditingTent({
+      ...editingTent,
+      items: [...editingTent.items, newStockItem]
+    });
+  };
+
+  const handleUpdateItem = (index: number, field: string, value: string | number) => {
+    if (!editingTent) return;
+
+    const updatedItems = [...editingTent.items];
+    const itemToUpdate = updatedItems[index];
+
+    if (field === 'stockQuantity') {
+      itemToUpdate.stockQuantity = Number(value);
+    } else {
+      (itemToUpdate.product as any)[field] = value;
+    }
+
+    setEditingTent({ ...editingTent, items: updatedItems });
+  };
+
+  const handleSaveEdits = async () => {
+    if (!editingTent) return;
+
+    const baseUrl = "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
+
+    const existingItems = editingTent.items.filter((item: any) => !item.isNew);
+    const newItems = editingTent.items.filter((item: any) => item.isNew);
+
+    try {
+        const createdStockItems = await Promise.all(newItems.map(async (item: any) => {
+
+            const priceToSend = Number(item.product.price) <= 0 ? 0.01 : Number(item.product.price);
+
+            const safeQuantity = item.stockQuantity && item.stockQuantity > 0 ? item.stockQuantity : 1;
+
+            const safePrice = Number(item.product.price) > 0 ? Number(item.product.price) : 0.01;
+
+            const payload = {
+              tentCode: item.tentCode,
+              stockQuantity: safeQuantity, 
+              quantity: safeQuantity,      
+              quantidade: safeQuantity,
+
+              name: item.product.name,
+              description: item.product.description,
+              price: safePrice,
+              imagem: null
+            };
+
+            const response = await fetch(`${baseUrl}/products`, { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text(); 
+                console.error(`Falha no Backend [Status ${response.status}]:`, errorBody);
+                throw new Error(`Erro ao salvar item: ${item.product.name}. Detalhes: ${errorBody}`);
+            }
+
+            const savedProduct = await response.json(); 
+
+            return {
+              tentCode: item.tentCode,
+              stockQuantity: item.stockQuantity,
+              product: savedProduct
+            };
+        }));
+
+        const finalItemsList = [...existingItems, ...createdStockItems];
+
+        const tentUpdatePayload = {
+          ...editingTent,
+          items: finalItemsList
+        };
+
+        const putResponse = await fetch(`${baseUrl}/tents/${editingTent.code}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(tentUpdatePayload)
+        });
+
+        if (!putResponse.ok) {
+            const errorBody = await putResponse.text();
+            throw new Error(`Erro no PUT da Barraca: ${errorBody}`);
+        }
+
+        const updatedTentFromServer = await putResponse.json();
+
+        const updatedTentsList = user.tents.map((t: tent) => 
+            t.code === editingTent.code ? updatedTentFromServer : t
+        );
+
+        setUser({ ...user, tents: updatedTentsList });
+        updateLocalStorage(updatedTentsList);
+
+        setEditingTent(null); 
+        console.log("Sucesso!");
+
+    } catch (error) {
+        console.error("Erro crítico:", error);
+        alert(`Erro: ${error}`);
+    }
+  };
+
+  if (loading) return <div className="flex h-screen items-center justify-center">Carregando perfil...</div>;
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8 flex justify-center relative">
+      <div className="w-full max-w-4xl space-y-8">
+
+        <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
+          <div className="flex-shrink-0">
+              <div className="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center">
+                <span className="text-gray-500">Sem Foto</span>
+              </div>
+          </div>
+          <div className="text-center md:text-left flex-grow">
+            <h1 className="text-3xl font-extrabold text-gray-900 flex items-center justify-center md:justify-start">
+                 <User className="w-6 h-6 text-indigo-600 mr-2" /> {user?.nome}
+            </h1>
+            <p className="mt-1 text-lg text-indigo-600 font-medium">{user?.email}</p>
+            <div className='flex flex-row justify-center md:justify-start gap-4 mt-4'>
+              <Button onClick={handleHistory} className="bg-indigo-600 hover:bg-indigo-500">Histórico</Button>
+              <Button onClick={handleNewTent} className="bg-indigo-600 hover:bg-indigo-500">Adicionar Barraca</Button>
+              <Button onClick={handleLogout} variant="destructive">Logout</Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+            <Store className="w-6 h-6 text-pink-500 mr-2" /> Minhas Barracas ({user?.tents.length})
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {user?.tents.map((t: tent) => (
+              <div key={t.code} className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-pink-500 relative hover:shadow-xl transition">
+                
+                <div className='flex justify-between items-start mb-4'>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">{t.name}</h3>
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Licença: {t.userLicense}</span>
+                  </div>
+
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => handleOpenEdit(t)}
+                    className="text-gray-500 hover:text-indigo-600 hover:bg-indigo-50"
+                  >
+                    <Pencil className="w-5 h-5" />
+                  </Button>
+                </div>
+                
+                {(!t.items || t.items.length === 0) ? (
+                   <p className="text-sm text-gray-400">Nenhum produto cadastrado.</p>
+                ) : (
+                  <div className="space-y-3">
+                     {t.items.slice(0, 3).map((s: stock) => (
+                      <div key={s.productCode} className="flex justify-between text-sm border-b border-gray-100 pb-1">
+                          <span className="text-gray-700 font-medium">{s.product.name}</span>
+                          <span className="text-gray-500">Qtd: {s.stockQuantity}</span>
+                      </div>
+                     ))}
+                     {t.items.length > 3 && <p className="text-xs text-center text-gray-400">e mais {t.items.length - 3} itens...</p>}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Nova Barraca</h3>
+                <button onClick={() => setIsModalOpen(false)}><X className="w-6 h-6 text-gray-500" /></button>
+            </div>
+            <form onSubmit={handleSaveTent} className="space-y-4">
+              {error && <div className="text-red-600 text-sm">{error}</div>}
+              <input type="text" className="w-full p-2 border rounded" placeholder="Nome da Barraca" value={newTentData.name} onChange={(e) => setNewTentData({...newTentData, name: e.target.value})} />
+              <input type="text" className="w-full p-2 border rounded" placeholder="Licença" value={newTentData.userLicense} onChange={(e) => setNewTentData({...newTentData, userLicense: e.target.value})} />
+              <input type="text" className="w-full p-2 border rounded" placeholder="CPF Responsável" value={newTentData.cpfHolder} onChange={(e) => setNewTentData({...newTentData, cpfHolder: e.target.value})} />
+              <Button type="submit" className="w-full bg-indigo-600">Criar Barraca</Button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editingTent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            
+            <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center flex-shrink-0">
+              <h3 className="text-lg font-bold text-white flex items-center">
+                <Pencil className="w-5 h-5 mr-2" /> Editando: {editingTent.name}
+              </h3>
+              <button onClick={() => setEditingTent(null)} className="text-white hover:text-gray-200">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-grow bg-gray-50">
+                
+                <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-semibold text-gray-700">Itens e Estoque</h4>
+                    <Button onClick={handleAddNewItem} size="sm" className="bg-green-600 hover:bg-green-500">
+                        <Plus className="w-4 h-4 mr-1" /> Novo Item
+                    </Button>
+                </div>
+
+                {editingTent.items.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 border-2 border-dashed rounded-lg">
+                        Nenhum item nesta barraca. Adicione um novo item acima.
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {editingTent.items.map((item, index) => (
+                            <div 
+                              key={item.productCode ? item.productCode : `new-${index}`} 
+                              className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-4 items-start"
+                            >
+                              <div className="md:col-span-4 space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Nome do Produto</label>
+                                <input 
+                                  type="text" 
+                                  className="w-full p-2 border rounded text-sm font-semibold"
+                                  value={item.product.name}
+                                  onChange={(e) => handleUpdateItem(index, 'name', e.target.value)}
+                                  placeholder="Nome do Item"
+                                />
+                              </div>
+
+                                <div className="md:col-span-4 space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Descrição</label>
+                                    <textarea 
+                                        rows={1}
+                                        className="w-full p-2 border rounded text-sm"
+                                        value={item.product.description ?? ""}
+                                        onChange={(e) => handleUpdateItem(index, 'description', e.target.value)}
+                                        placeholder="Descrição breve"
+                                    />
+                                </div>
+
+                                <div className="md:col-span-2 space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Preço (R$)</label>
+                                    <input 
+                                        type="number" 
+                                        className="w-full p-2 border rounded text-sm"
+                                        value={item.product.price}
+                                        onChange={(e) => handleUpdateItem(index, 'price', parseFloat(e.target.value))}
+                                        placeholder="0.00"
+                                    />
+                                </div>
+
+                                <div className="md:col-span-2 space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Estoque</label>
+                                    <input 
+                                        type="number" 
+                                        className="w-full p-2 border rounded text-sm bg-indigo-50 font-bold text-indigo-700"
+                                        value={item.stockQuantity}
+                                        onChange={(e) => handleUpdateItem(index, 'stockQuantity', parseInt(e.target.value))}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div className="p-4 bg-white border-t flex justify-end space-x-3 flex-shrink-0">
+                <Button variant="outline" onClick={() => setEditingTent(null)}>Cancelar</Button>
+                <Button onClick={handleSaveEdits} className="bg-indigo-600 hover:bg-indigo-500">
+                    <Save className="w-4 h-4 mr-2" /> Salvar Alterações
+                </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
