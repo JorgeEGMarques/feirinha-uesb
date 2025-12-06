@@ -1,20 +1,30 @@
 {
   "products": [
-    { "id": "1", "src":"/dorivaldo_balao.webp", "name": "Balão Ruliço", "description": "Uma enorme cabeça capaz de ser vista a quilômetros de distância", "price": 69.50 },
-    { "id": "2", "src":"/queeeeente.webp", "name": "Labubs", "description": "QUEEEEEEEEENTE", "price": 23.98 },
-    { "id": "3", "src":"/esqueletos.webp", "name": "Esqueletos", "description": "Três tropas terrestres rápidas, de alvo único, com ataques corpo a corpo, com poucos pontos de vida e dano muito baixo.", "price": 1.00 }
+    {"code":9,"name":"Coxinha","price":4.50,"description":"Coxinha de frango 70g","imagem":null},
+    {"code":10,"name":"Suco Natural","price":6.00,"description":"Suco de laranja 300ml","imagem":null},
+    {"code":11,"name":"Pão de Queijo","price":3.00,"description":"Pão de queijo quentinho","imagem":null},
+    {"code":1,"name":"Coxinha","price":5.50,"description":"Coxinha grande","imagem":"R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="},
+    {"code":2,"name":"Suco Natural","price":4.00,"description":"Suco de laranja 300ml","imagem":"R0lGODlhAQABAPAAAP8AAP///yH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="}
   ],
-  "comments": [
-    { "id": "1", "text": "a comment about post 1", "postId": "1", "userId": "1" },
-    { "id": "2", "text": "another comment about post 1", "postId": "1", "userId": "2" },
-    { "id": "3", "text": "a comment about post 2", "postId": "2", "userId": "1" },
-    { "id": "4", "text": "another comment about post 2", "postId": "2", "userId": "2" }
+  "comentarios": [
+    {"id":1,"texto":"Muito boa, recomendo!","codProd":1,"cpfUsuario":"23456789012","dataPostagem":[2025,12,3,21,26,27,609711000]},
+    {"id":2,"texto":"Ótima qualidade, vou voltar.","codProd":2,"cpfUsuario":"12345678901","dataPostagem":[2025,12,3,21,26,27,609711000]}
   ],
-  "tents": [
-    { "cod_barraca": "1", "cpf_dono": "2345678", "nome_barraca": "Barraca", "licensa_usuario": "tem", "lista_de_itens": [{"id": "1", "estoque": 30}, {"id": "2", "estoque": 40}, {"id": "3", "estoque": 22}] }
+  "tent": [
+    {"code":1,"cpfHolder":"12345678901","name":"Barraca da Maria","userLicense":"","items":[
+      {"productCode":1,"tentCode":1,"stockQuantity":50,"product":{"code":1,"name":"Coxinha","price":5.50,"description":"Coxinha grande","imagem":"R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="}},
+      {"productCode":2,"tentCode":1,"stockQuantity":30,"product":{"code":2,"name":"Suco Natural","price":4.00,"description":"Suco de laranja 300ml","imagem":"R0lGODlhAQABAPAAAP8AAP///yH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="}}
+    ]},
+    {"code":2,"cpfHolder":"23456789012","name":"Quitanda do João","userLicense":"","items":[
+      {"productCode":11,"tentCode":2,"stockQuantity":100,"product":{"code":11,"name":"Pão de Queijo","price":3.00,"description":"Pão de queijo quentinho","imagem":null}}
+    ]},
+    {"code":100,"cpfHolder":"11111111111","name":"Barraca do João","userLicense":"AA==","items":[]}
   ],
-  "profile": [
-    {"id": "1", "login": "mclovin@gmail.com", "password":"senha", "name": "McLovin", "cpf": "2345678", "src": "/mclovin.webp" },
-    {"id": "2", "login": "fulano@gmail.com", "password":"123456", "name": "Fulano da Silva", "cpf": "123", "src": "https://placehold.co/128x128/6366f1/FFFFFF/svg?text=JG", "barracas": []}
+  "usuarios": [
+    {"cpf":"23456789012","nome":"João Souza","telefone":"71999990002","email":"joao@example.com","senha":"senha123","fotoPerfil":""},
+    {"cpf":"12345678901","nome":"Rik Login","telefone":"+557799990000","email":"rik@example.com","senha":"senha123","fotoPerfil":"R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="}
+  ],
+  "sales": [
+    {"id":2,"saleDate":[2025,12,3],"tentCode":1,"userCode":"23456789012","items":null}
   ]
 }

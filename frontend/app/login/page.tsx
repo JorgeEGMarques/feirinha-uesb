@@ -11,12 +11,6 @@ interface Message {
   text: string;
 }
 
-interface Profile {
-  id: string,
-  login: string,
-  password: string
-}
-
 export default function Login() {
   const router = useRouter();
   const loginAction = useAuthStore((state) => state.login);
@@ -24,6 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState<string>('');
   const [message, setMessage] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isRegistering, setIsRegistering] = useState<boolean>(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,24 +31,43 @@ export default function Login() {
       return;
     }
 
-    const profiles = await fetch('http://localhost:3000/profile')
-    .then(response => response.json())
-    .catch(error => console.error('Error', error));
+    const baseUrl = process.env.NGROK_URL || "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
 
-    if (profiles.find((a: Profile) => a.login === email)) {
-      let index = profiles.findIndex((a: Profile) => a.login === email);
-
-      if (profiles[index].password === password) {
-        loginAction(profiles[index].id)
-        setMessage({ type: 'success', text: 'Login bem-sucedido! Redirecionando...' });
-        router.push('/');
-        return
+    await fetch(`${baseUrl}/usuarios/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        senha: password
+      })
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    }
-    
-    setMessage({ type: 'error', text: 'Email ou senha incorretos.' });
-    setIsLoading(false);
+      return response.json(); // Parse the JSON response from the server
+    })
+    .then(data => {
+      loginAction(JSON.stringify(data));
+      setMessage({ type: 'success', text: 'Login bem-sucedido! Redirecionando...' });
+      router.push('/');
+      return
+    })
+    .catch(error => {
+      console.log('Error', error)
+      setMessage({ type: 'error', text: 'Email ou senha incorretos.' });
+      setIsLoading(false);
+    });
 
+  };
+
+  const handleRegister = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    if (typeof window !== 'undefined') {
+      router.push('/register');
+    }
   };
 
   const handleForgotPassword = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -143,6 +157,19 @@ export default function Login() {
                 onClick={handleForgotPassword} // Usando a nova função tipada
               >
                 Esqueceu a senha?
+              </a>
+            </div>
+          </div>
+  
+          {/* Opções (Cadastrar usuario) */}
+          <div className="flex items-center justify-end">
+            <div className="text-sm">
+              <a 
+                href="#" 
+                className="font-medium text-black-600 hover:text-gray-500 transition duration-150 ease-in-out"
+                onClick={handleRegister} // Usando a nova função tipada
+              >
+                Cadastrar-se
               </a>
             </div>
           </div>

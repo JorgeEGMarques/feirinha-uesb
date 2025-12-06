@@ -15,7 +15,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: (id: string) => {
     // Salva no localStorage
     localStorage.setItem("logged", "true");
-    localStorage.setItem("userId", id);
+    localStorage.setItem("userData", id);
     // Atualiza o estado global (reagindo na hora)
     set({ isLogged: true, userId: id });
   },
@@ -23,6 +23,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem("logged");
     localStorage.removeItem("userId");
+    localStorage.removeItem("userData");
     set({ isLogged: false, userId: null });
   },
 
