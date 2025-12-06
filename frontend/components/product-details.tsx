@@ -76,7 +76,7 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
   return (
     <div>
       <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-center">
-        <div className="relative h-96 w-full md:w-1/2 rounded-lg overflow-hidden">
+        <div className="relative h-96 w-full md:w-1/2 rounded-lg overflow-hidden border border-gray-200">
           <Image
             src={imageConverter(product.imagem)}
             alt={product.name}
@@ -139,7 +139,9 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
         </div>
 
         {comments.length === 0 ? (
-          <p className="text-gray-500 italic">Nenhum comentário ainda. Seja o primeiro a avaliar!</p>
+          <div className="text-center py-8 bg-gray-50 rounded-lg">
+             <p className="text-gray-500 italic">Nenhum comentário ainda. Seja o primeiro a avaliar!</p>
+          </div>
         ) : (
           comments.filter((com) => com.codProd === product.code).map((c: comment) => {
             const user = profiles.find((u: profile) => u.cpf === c.cpfUsuario);
@@ -151,15 +153,15 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
                 
                 <div className="flex-shrink-0">
                   {userAvatar ? (
-                    <img
+                      <img
                       src={userAvatar}
                       alt={userName}
                       className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                    />
+                      />
                   ) : (
                     <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-lg">
                       {userName.charAt(0).toUpperCase()}
-                    </div>
+                      </div>
                   )}
                 </div>
 
@@ -177,11 +179,11 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
                     {c.texto}
                   </p>
                 </div>
-              </div>
-            );
-          })
+                )
+            })}
+          </div>
         )}
       </div>
     </div>
   )
-};
+}
