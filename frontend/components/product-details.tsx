@@ -1,20 +1,22 @@
 "use client"
 
-import { useState } from "react"; // Importação adicionada
-import { useRouter } from "next/navigation"; // Importação adicionada
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image"
 import { comment, product, profile } from "@/utils/types"
 import { Button } from "./ui/button";
 import { useCartStore } from "@/store/cart-store";
 import { imageConverter } from "@/utils/image-converter";
+import { ShoppingCart, Store } from "lucide-react"; // Sugestão: ícones para melhor visual
 
 interface ProductDetailsProps {
   product: product;
   comments: comment[];
   profiles: profile[];
+  tentName: string; // 1. Nova Prop para o nome da barraca
 }
 
-export const ProductDetail = ({ product, comments, profiles }: ProductDetailsProps) => {
+export const ProductDetail = ({ product, comments, profiles, tentName }: ProductDetailsProps) => {
   const router = useRouter();
   const { items, addItem, removeItem } = useCartStore();
   
@@ -34,6 +36,14 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
     })
   }
 
+  // 2. Função para "Comprar Agora" (Checkout direto)
+  const handleBuyNow = () => {
+    if (quantity === 0) {
+      onAddItem();
+    }
+    router.push("/checkout"); // Ajuste para sua rota de checkout/carrinho
+  };
+
   const handleSendComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCommentText.trim()) return;
@@ -44,7 +54,7 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
       const payload = {
         texto: newCommentText,  
         codProd: product.code,
-        tentCode: 1,
+        tentCode: product.tentCode || 1, // Melhoria: Tenta pegar do produto, fallback para 1
         cpfUsuario: "12345678901",
       };
 
@@ -75,46 +85,92 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
 
   return (
     <div>
-      <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-center">
-        <div className="relative h-96 w-full md:w-1/2 rounded-lg overflow-hidden">
+      <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-start"> {/* items-center -> items-start para melhor alinhamento */}
+        
+        {/* Imagem do Produto */}
+        <div className="relative h-96 w-full md:w-1/2 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
           <Image
             src={imageConverter(product.imagem)}
             alt={product.name}
             fill={true}
             style={{ objectFit: 'cover' }}
-            className="transition duration-300"
+            className="transition duration-300 hover:scale-105"
             loading="eager"
           />
         </div>
 
-        <div className="md:w-1/2">
-          <h1 className="text-3xl font-bold mb-4"> {product.name} </h1>
+        {/* Detalhes do Produto */}
+        <div className="md:w-1/2 flex flex-col justify-between h-full space-y-6">
+          <div>
+            {/* 3. Exibição do Nome da Barraca */}
+            <div className="flex items-center gap-2 text-black-600 mb-2">
+              <Store size={18} />
+              <span className="text-sm font-semibold uppercase tracking-wider">
+                Vendido por {tentName}
+              </span>
+            </div>
 
-          {product.description && (
-            <p className="text-gray-700 mb-4">
-              {product.description}
-            </p>
-          )}
+            <h1 className="text-4xl font-bold mb-4 text-gray-900 leading-tight"> {product.name} </h1>
 
-          {product.price && (
-            <p className="text-lg font-semibold text-gray-900">
-              R${(product.price).toFixed(2)}
-            </p>
-          )}
+            {product.description && (
+              <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                {product.description}
+              </p>
+            )}
 
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" className="hover:cursor-pointer" onClick={() => removeItem(product.code)}> -</Button>
-            <span className="text-lg font-semibold"> {quantity}</span>
-            <Button className="hover:cursor-pointer" onClick={onAddItem}>+</Button>
+            {product.price && (
+              <div className="bg-gray-50 p-4 rounded-lg inline-block mb-6">
+                <p className="text-3xl font-bold text-gray-900">
+                  R$ {(product.price).toFixed(2).replace('.', ',')}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            {/* Controles de Quantidade */}
+            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-2 w-full md:w-64">
+                <span className="text-gray-500 text-sm ml-2">Quantidade:</span>
+                <div className="flex items-center gap-4">
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="hover:bg-red-50 hover:text-red-600 h-8 w-8 rounded-full" 
+                        onClick={() => removeItem(product.code)}
+                    > 
+                        - 
+                    </Button>
+                    <span className="text-lg font-bold min-w-[20px] text-center"> {quantity}</span>
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="hover:bg-green-50 hover:text-green-600 h-8 w-8 rounded-full" 
+                        onClick={onAddItem}
+                    >
+                        +
+                    </Button>
+                </div>
+            </div>
+
+            {/* 4. Botão de Checkout / Comprar Agora */}
+            <Button 
+                className="w-full md:w-auto px-8 py-6 text-lg bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all hover:-translate-y-1 flex items-center justify-center gap-2"
+                onClick={handleBuyNow}
+            >
+                <ShoppingCart size={24} />
+                Comprar Agora
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="space-y-6 mt-8 container mx-auto px-4">
-        <h3 className="text-xl font-bold text-gray-900 border-b pb-4">
+      {/* Seção de Comentários (Manteve-se a mesma lógica, apenas ajustes visuais se necessário) */}
+      <div className="space-y-6 mt-12 container mx-auto px-4 max-w-4xl">
+        <h3 className="text-2xl font-bold text-gray-900 border-b pb-4">
           Avaliações dos Clientes
         </h3>
-
+        
+        {/* ... restante do código de comentários igual ... */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
           <h4 className="text-md font-semibold text-gray-800 mb-2">Deixe sua avaliação</h4>
           <form onSubmit={handleSendComment}>
@@ -138,8 +194,8 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
           </form>
         </div>
 
-        {comments.length === 0 ? (
-          <p className="text-gray-500 italic">Nenhum comentário ainda. Seja o primeiro a avaliar!</p>
+        {comments?.length === 0 ? (
+          <p className="text-gray-500 italic text-center py-8">Nenhum comentário ainda. Seja o primeiro a avaliar!</p>
         ) : (
           comments.filter((com) => com.codProd === product.code).map((c: comment) => {
             const user = profiles.find((u: profile) => u.cpf === c.cpfUsuario);

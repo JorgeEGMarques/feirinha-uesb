@@ -4,6 +4,7 @@ export type product = {
   description: string | null;
   price: number;
   name: string;
+  tentCode: number
 };
 
 export type profile = {

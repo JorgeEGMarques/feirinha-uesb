@@ -9,9 +9,11 @@ export default async function ProductsPage() {
   const tents = await fetch(`${process.env.NGROK_URL}/tents`)
     .then(response => response.json())
     .catch(error => console.error('Error', error));
+  
+  const usuario = await fetch(`${process.env.NGROK_URL}/usuarios/23456789012`)
+    .then(response => response.json())
+    .catch(error => console.error('Error', error));
     
-  console.log('Products:', products);
-  // console.log('Tents:', tents);
   return (
     <div>
       <ProductList products={products} />

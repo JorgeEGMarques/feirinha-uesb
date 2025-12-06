@@ -13,22 +13,35 @@ interface NewTentForm {
   cpfHolder: string;
 }
 
-interface UserProfile {
-  nome: string;
-  email: string;
-  cpf: string;
-  fotoPerfil: string | null;
-  telefone: string;
-  senha: string;
-  tents: tent[];
-}
+// interface Product {
+//   code: number;
+//   name: string;
+//   price: number;
+//   description?: string;
+//   imagem?: string | null;
+//   tentCode: number;
+// }
+
+// interface Item {
+//   productCode: number;
+//   tentCode: number;
+//   stockQuantity: number;
+//   product?: Product;
+// }
+
+// interface Tent {
+//   code: number;
+//   cpfHolder: string;
+//   name: string;
+//   userLicense: string;
+//   items: Item[];
+// }
 
 export default function Profile() {
   const router = useRouter();
   const { logout } = useAuthStore();
 
-  const [userProfile, setUserProfile] = useState<UserProfile>();
-  const [userTents, setUserTents] = useState<tent[]>([]);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,9 +56,9 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    async function fetchData() {
-      const baseUrl = process.env.NGROK_URL || "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
-      const usuarios = await fetch(`${baseUrl}/usuarios`, {
+    async function fetchData(cpf: string) {
+      const baseUrl = process.env.NGROK_URL || `https://anja-superethical-appeasedly.ngrok-free.dev/crud/api/`;
+      const usuario = await fetch(`${baseUrl}/usuarios/${cpf}`, {
         headers: {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true'
@@ -53,24 +66,20 @@ export default function Profile() {
       })
         .then(response => response.json())
         .catch(error => console.error('Error', error));
-      console.log('usuarios:', usuarios);
+
+      setUser(usuario);
     }
 
     const storedData = localStorage.getItem("userData");
     
     if (storedData) {
         const parsedData = JSON.parse(storedData);
-        setUserProfile(parsedData);
+        fetchData(parsedData.cpf);
     }
     setLoading(false);
-
-
-    fetchData();
   }, []);
 
   const updateLocalStorage = (tents: tent[]) => {
-    setUserTents(tents);
-
     const storedData = localStorage.getItem("userData");
     if (storedData) {
         const parsedData = JSON.parse(storedData);
@@ -124,11 +133,11 @@ export default function Profile() {
       console.log('Error', error)
     });
 
-    const updatedTents = [...userTents, newTent];
+    const updatedTents = [...user?.tents, newTent];
     updateLocalStorage(updatedTents);
     
     setIsModalOpen(false);
-    setNewTentData({ name: '', userLicense: '', cpfHolder: userProfile?.cpf || '' });
+    setNewTentData({ name: '', userLicense: '', cpfHolder: user?.cpf || '' });
     setError('');
   };
 
@@ -137,11 +146,9 @@ export default function Profile() {
   }
 
   const handleOpenEdit = (t: tent) => {
-    // Fazemos uma cópia profunda para não alterar o estado visual antes de salvar
     setEditingTent(JSON.parse(JSON.stringify(t))); 
   };
 
-  // 2. Adiciona um novo item vazio à lista de itens da barraca em edição
   const handleAddNewItem = async () => {
     if (!editingTent) return;
 
@@ -155,28 +162,9 @@ export default function Profile() {
     const newStockItem: any = {
         tentCode: editingTent.code,
         stockQuantity: 1,
-        product: newProduct
+        product: newProduct,
+        isNew: true // <--- ADICIONE ESTA FLAG
     };
-
-    // const baseUrl = process.env.NGROK_URL || "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
-
-    // await fetch(`${baseUrl}/products`, {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(newStockItem)
-    // })
-    // .then(response => {
-    //   if (!response.ok) {
-    //     throw new Error(`HTTP error! status: ${response.status}`);
-    //   }
-    //   return response.json(); // Parse the JSON response from the server
-    // })
-    // .then(data => {
-    //   console.log("success", data);
-    // })
-    // .catch(error => console.log('Error', error));
 
     setEditingTent({
       ...editingTent,
@@ -184,7 +172,6 @@ export default function Profile() {
     });
   };
 
-  // 3. Atualiza campos de um item existente (Nome, Descrição, Preço ou Estoque)
   const handleUpdateItem = (index: number, field: string, value: string | number) => {
     if (!editingTent) return;
 
@@ -192,27 +179,111 @@ export default function Profile() {
     const itemToUpdate = updatedItems[index];
 
     if (field === 'stockQuantity') {
-        // Atualiza a quantidade no objeto Stock
-        itemToUpdate.stockQuantity = Number(value);
+      itemToUpdate.stockQuantity = Number(value);
     } else {
-        // Atualiza propriedades dentro do objeto Product (Nome, Preço, Descrição)
-        (itemToUpdate.product as any)[field] = value;
+      (itemToUpdate.product as any)[field] = value;
     }
 
     setEditingTent({ ...editingTent, items: updatedItems });
   };
 
-  // 4. Salva as alterações da edição no estado principal e no LocalStorage
   const handleSaveEdits = async () => {
     if (!editingTent) return;
 
-    const updatedTents = userTents.map(t => 
-        t.code === editingTent.code ? editingTent : t
-    );
-    updateLocalStorage(updatedTents);
-    setEditingTent(null); // Fecha o modal
-  };
+    const baseUrl = "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
 
+    const existingItems = editingTent.items.filter((item: any) => !item.isNew);
+    const newItems = editingTent.items.filter((item: any) => item.isNew);
+
+    try {
+        const createdStockItems = await Promise.all(newItems.map(async (item: any) => {
+
+            // Certifique-se de que o preço não é zero se o banco não permitir
+            const priceToSend = Number(item.product.price) <= 0 ? 0.01 : Number(item.product.price);
+
+            const safeQuantity = item.stockQuantity && item.stockQuantity > 0 ? item.stockQuantity : 1;
+
+            // 2. Correção de Preço: Garante que não é zero
+            const safePrice = Number(item.product.price) > 0 ? Number(item.product.price) : 0.01;
+
+            const payload = {
+              tentCode: item.tentCode,
+
+              // ESTRATÉGIA "TENTATIVA TRIPLA":
+              // Enviamos com 3 nomes diferentes para garantir que o Backend Java (DTO) pegue um deles.
+              stockQuantity: safeQuantity, 
+              quantity: safeQuantity,      
+              quantidade: safeQuantity,    // Muito provável que seja este, dado o nome do erro (chk_estoque_qntd...)
+
+              name: item.product.name,
+              description: item.product.description,
+              price: safePrice,
+              imagem: null
+            };
+
+            const response = await fetch(`${baseUrl}/products`, { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text(); 
+                console.error(`Falha no Backend [Status ${response.status}]:`, errorBody);
+                throw new Error(`Erro ao salvar item: ${item.product.name}. Detalhes: ${errorBody}`);
+            }
+
+            const savedProduct = await response.json(); 
+
+            return {
+              tentCode: item.tentCode,
+              stockQuantity: item.stockQuantity,
+              product: savedProduct
+            };
+        }));
+
+        const finalItemsList = [...existingItems, ...createdStockItems];
+
+        const tentUpdatePayload = {
+          ...editingTent,
+          items: finalItemsList
+        };
+
+        const putResponse = await fetch(`${baseUrl}/tents/${editingTent.code}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(tentUpdatePayload)
+        });
+
+        if (!putResponse.ok) {
+            const errorBody = await putResponse.text();
+            throw new Error(`Erro no PUT da Barraca: ${errorBody}`);
+        }
+
+        const updatedTentFromServer = await putResponse.json();
+
+        // Se o updatedTentFromServer vier sem os itens detalhados (apenas IDs),
+        // pode ser necessário usar 'tentUpdatePayload' temporariamente ou fazer um refetch.
+        // Assumindo que o server retorna completo:
+        const updatedTentsList = user.tents.map((t: tent) => 
+            t.code === editingTent.code ? updatedTentFromServer : t
+        );
+
+        setUser({ ...user, tents: updatedTentsList });
+        updateLocalStorage(updatedTentsList);
+
+        setEditingTent(null); 
+        console.log("Sucesso!");
+
+    } catch (error) {
+        console.error("Erro crítico:", error);
+        alert(`Erro: ${error}`);
+    }
+  };
 
   if (loading) return <div className="flex h-screen items-center justify-center">Carregando perfil...</div>;
 
@@ -229,9 +300,9 @@ export default function Profile() {
           </div>
           <div className="text-center md:text-left flex-grow">
             <h1 className="text-3xl font-extrabold text-gray-900 flex items-center justify-center md:justify-start">
-                 <User className="w-6 h-6 text-indigo-600 mr-2" /> {userProfile?.nome}
+                 <User className="w-6 h-6 text-indigo-600 mr-2" /> {user?.nome}
             </h1>
-            <p className="mt-1 text-lg text-indigo-600 font-medium">{userProfile?.email}</p>
+            <p className="mt-1 text-lg text-indigo-600 font-medium">{user?.email}</p>
             <div className='flex flex-row justify-center md:justify-start gap-4 mt-4'>
               <Button onClick={handleHistory} className="bg-indigo-600 hover:bg-indigo-500">Histórico</Button>
               <Button onClick={handleNewTent} className="bg-indigo-600 hover:bg-indigo-500">Adicionar Barraca</Button>
@@ -243,11 +314,11 @@ export default function Profile() {
         {/* --- Lista de Barracas --- */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-            <Store className="w-6 h-6 text-pink-500 mr-2" /> Minhas Barracas ({userTents.length})
+            <Store className="w-6 h-6 text-pink-500 mr-2" /> Minhas Barracas ({user?.tents.length})
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {userTents.map((t: tent) => (
+            {user?.tents.map((t: tent) => (
               <div key={t.code} className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-pink-500 relative hover:shadow-xl transition">
                 
                 {/* Cabeçalho do Card da Barraca */}
@@ -338,21 +409,21 @@ export default function Profile() {
                 ) : (
                     <div className="space-y-4">
                         {editingTent.items.map((item, index) => (
-                            <div key={item.productCode} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-                                
-                                {/* Coluna 1: Dados Básicos */}
-                                <div className="md:col-span-4 space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase">Nome do Produto</label>
-                                    <input 
-                                        type="text" 
-                                        className="w-full p-2 border rounded text-sm font-semibold"
-                                        value={item.product.name}
-                                        onChange={(e) => handleUpdateItem(index, 'name', e.target.value)}
-                                        placeholder="Nome do Item"
-                                    />
-                                </div>
+                            <div 
+                              key={item.productCode ? item.productCode : `new-${index}`} 
+                              className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 grid grid-cols-1 md:grid-cols-12 gap-4 items-start"
+                            >
+                              <div className="md:col-span-4 space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase">Nome do Produto</label>
+                                <input 
+                                  type="text" 
+                                  className="w-full p-2 border rounded text-sm font-semibold"
+                                  value={item.product.name}
+                                  onChange={(e) => handleUpdateItem(index, 'name', e.target.value)}
+                                  placeholder="Nome do Item"
+                                />
+                              </div>
 
-                                {/* Coluna 2: Descrição */}
                                 <div className="md:col-span-4 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Descrição</label>
                                     <textarea 
@@ -364,7 +435,6 @@ export default function Profile() {
                                     />
                                 </div>
 
-                                {/* Coluna 3: Preço e Estoque */}
                                 <div className="md:col-span-2 space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase">Preço (R$)</label>
                                     <input 

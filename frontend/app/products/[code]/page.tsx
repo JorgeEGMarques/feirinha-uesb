@@ -15,29 +15,15 @@ export default async function ProductPage({ params }: { params: Promise<{ code: 
     .then(response => response.json())
     .catch(error => console.log('Error'));
 
-      return (
-    <div>
-      <ProductDetail product={product} comments={comments} profiles={profiles} />
-    </div>
+  const tents = await fetch(`${process.env.NGROK_URL}/tents`)
+    .then(response => response.json())
+    .catch(error => console.log('Error'));
 
-    //  comments={comments} profiles={profiles}
+  const tentName = tents.find((tent: any) => tent.code === product.tentCode)?.name || "";
+
+  return (
+    <div>
+      <ProductDetail product={product} comments={comments} profiles={profiles} tentName={tentName}/>
+    </div>
   )
 }
-
-      // await fetch(`${process.env.NGROK_URL}/comentarios`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(dataToSend)
-      // })
-      // .then(response => {
-      //   if (!response.ok) {
-      //     throw new Error(`HTTP error! status: ${response.status}`);
-      //   }
-      //   return response.json(); // Parse the JSON response from the server
-      // })
-      // .then(data => {
-      //   console.log("success", data);
-      // })
-      // .catch(error => console.log('Error', error));
