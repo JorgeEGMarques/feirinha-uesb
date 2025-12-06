@@ -35,7 +35,7 @@ public class SaleDAO {
             stmtSale.setInt(1, sale.getId());
             stmtSale.setObject(2, sale.getSaleDate());
             stmtSale.setInt(3, sale.getTentCode());
-            stmtSale.setString(4, sale.getUserCode()); // Modelo usa String, SQL usa char(11). Correto.
+            stmtSale.setString(4, sale.getUserCode()); 
             
             int rowsAffected = stmtSale.executeUpdate();
             if (rowsAffected == 0) {
@@ -80,11 +80,9 @@ public class SaleDAO {
     public Sale getById(int id) throws SQLException {
         Sale sale = null;
         String sqlSale = "SELECT * FROM public.venda WHERE id_venda = ?";
-        String sqlItems = "SELECT * FROM public.item_venda WHERE id_venda = ?";
-
+        
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmtSale = conn.prepareStatement(sqlSale);
-             PreparedStatement stmtItems = conn.prepareStatement(sqlItems)) {
+             PreparedStatement stmtSale = conn.prepareStatement(sqlSale)) {
             
             // --- PASSO 1: Buscar a Venda (Pai) ---
             stmtSale.setInt(1, id);
@@ -96,23 +94,60 @@ public class SaleDAO {
             
             // --- PASSO 2: Buscar os Itens (Filhos) ---
             if (sale != null) {
-                stmtItems.setInt(1, id);
-                List<SaleItem> items = new ArrayList<>();
-                
-                // CORREÇÃO: Bloco estava faltando
-                try (ResultSet rsItems = stmtItems.executeQuery()) {
-                    while (rsItems.next()) {
-                        items.add(mapRowToSaleItem(rsItems)); 
-                    }
-                }
-                sale.setItems(items);
+                loadItemsForSale(conn, sale);
             }
         }
         return sale;
     }
 
     /**
-     * Busca todas as Vendas (sem seus itens, para ser mais rápido).
+     * Busca todas as compras feitas por um usuário específico (Histórico de Compras).
+     */
+    public List<Sale> getByUserId(String userId) throws SQLException {
+        List<Sale> sales = new ArrayList<>();
+        String sql = "SELECT * FROM public.venda WHERE cod_usuario = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setString(1, userId);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Sale sale = mapRowToSale(rs);
+                    loadItemsForSale(conn, sale); // Carrega os itens
+                    sales.add(sale);
+                }
+            }
+        }
+        return sales;
+    }
+
+    /**
+     * Busca todas as vendas realizadas por uma barraca específica (Histórico de Vendas).
+     */
+    public List<Sale> getByTentId(int tentId) throws SQLException {
+        List<Sale> sales = new ArrayList<>();
+        String sql = "SELECT * FROM public.venda WHERE cod_barraca = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
+            stmt.setInt(1, tentId);
+            
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Sale sale = mapRowToSale(rs);
+                    loadItemsForSale(conn, sale); // Carrega os itens
+                    sales.add(sale);
+                }
+            }
+        }
+        return sales;
+    }
+
+    /**
+     * Busca todas as Vendas.
      */
     public List<Sale> getAll() throws SQLException {
         List<Sale> sales = new ArrayList<>();
@@ -123,16 +158,19 @@ public class SaleDAO {
              ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
-                sales.add(mapRowToSale(rs));
+                Sale sale = mapRowToSale(rs);
+                // Opcional: carregar itens aqui se necessário, mas pode ser pesado para getAll()
+                // loadItemsForSale(conn, sale); 
+                sales.add(sale);
             }
         }
         return sales;
     }
     
     /**
-     * Deleta uma venda e seus itens (precisa de transação).
+     * Deleta uma venda e seus itens.
      */
-    public void delete(int id) throws SQLException { // CORREÇÃO: Era 'String id'
+    public void delete(int id) throws SQLException { 
         String sqlItems = "DELETE FROM public.item_venda WHERE id_venda = ?";
         String sqlSale = "DELETE FROM public.venda WHERE id_venda = ?";
         
@@ -144,20 +182,20 @@ public class SaleDAO {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false); // Inicia transação
 
-            // 1. Deleta os "Filhos" (item_venda)
+            // 1. Deleta os "Filhos"
             stmtItems = conn.prepareStatement(sqlItems);
             stmtItems.setInt(1, id);
             stmtItems.executeUpdate();
 
-            // 2. Deleta o "Pai" (venda)
+            // 2. Deleta o "Pai"
             stmtSale = conn.prepareStatement(sqlSale);
-            stmtSale.setInt(1, id); // CORREÇÃO: Era 'setString'
+            stmtSale.setInt(1, id);
             stmtSale.executeUpdate();
             
-            conn.commit(); // Salva
+            conn.commit(); 
             
         } catch (SQLException e) {
-            if (conn != null) conn.rollback(); // Desfaz
+            if (conn != null) conn.rollback();
             throw new SQLException("Erro de transação ao deletar venda: " + e.getMessage(), e);
         } finally {
             if (stmtItems != null) stmtItems.close();
@@ -170,7 +208,7 @@ public class SaleDAO {
     }
 
     /**
-     * Atualiza uma Venda e substitui seus itens em uma transação.
+     * Atualiza uma Venda.
      */
     public void update(Sale sale) throws SQLException {
         String sqlUpdateSale = "UPDATE public.venda SET data_venda = ?, cod_barraca = ?, cod_usuario = ? WHERE id_venda = ?";
@@ -199,10 +237,10 @@ public class SaleDAO {
             stmtDeleteItems.setInt(1, sale.getId());
             stmtDeleteItems.executeUpdate();
 
-            // Insert new items (if any)
+            // Insert new items
             if (sale.getItems() != null && !sale.getItems().isEmpty()) {
                 stmtInsertItem = conn.prepareStatement(sqlInsertItem);
-                for (model.entities.SaleItem item : sale.getItems()) {
+                for (SaleItem item : sale.getItems()) {
                     stmtInsertItem.setInt(1, item.getProductCode());
                     stmtInsertItem.setInt(2, sale.getId());
                     stmtInsertItem.setShort(3, item.getSaleQuantity());
@@ -227,7 +265,22 @@ public class SaleDAO {
         }
     }
     
-    // --- MÉTODO AJUDANTE (PAI) ---
+    // --- MÉTODOS AJUDANTES ---
+
+    private void loadItemsForSale(Connection conn, Sale sale) throws SQLException {
+        String sqlItems = "SELECT * FROM public.item_venda WHERE id_venda = ?";
+        try (PreparedStatement stmtItems = conn.prepareStatement(sqlItems)) {
+            stmtItems.setInt(1, sale.getId());
+            try (ResultSet rsItems = stmtItems.executeQuery()) {
+                List<SaleItem> items = new ArrayList<>();
+                while (rsItems.next()) {
+                    items.add(mapRowToSaleItem(rsItems)); 
+                }
+                sale.setItems(items);
+            }
+        }
+    }
+
     private Sale mapRowToSale(ResultSet rs) throws SQLException {
         Sale sale = new Sale();
         sale.setId(rs.getInt("id_venda"));
@@ -237,7 +290,6 @@ public class SaleDAO {
         return sale;
     }
 
-    // --- MÉTODO AJUDANTE (FILHO) ---
     private SaleItem mapRowToSaleItem(ResultSet rs) throws SQLException {
         SaleItem item = new SaleItem();
         item.setProductCode(rs.getInt("cod_prod"));

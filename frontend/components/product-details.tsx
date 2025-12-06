@@ -41,7 +41,7 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
     if (quantity === 0) {
       onAddItem();
     }
-    router.push("/checkout"); // Ajuste para sua rota de checkout/carrinho
+    router.push("/carrinho"); // Ajuste para sua rota de checkout/carrinho
   };
 
   const handleSendComment = async (e: React.FormEvent) => {
@@ -103,7 +103,7 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
         <div className="md:w-1/2 flex flex-col justify-between h-full space-y-6">
           <div>
             {/* 3. Exibição do Nome da Barraca */}
-            <div className="flex items-center gap-2 text-black-600 mb-2">
+            <div className="flex items-center gap-2 text-indigo-600 mb-2">
               <Store size={18} />
               <span className="text-sm font-semibold uppercase tracking-wider">
                 Vendido por {tentName}
@@ -194,7 +194,7 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
           </form>
         </div>
 
-        {comments?.length === 0 ? (
+        {comments.length === 0 ? (
           <p className="text-gray-500 italic text-center py-8">Nenhum comentário ainda. Seja o primeiro a avaliar!</p>
         ) : (
           comments.filter((com) => com.codProd === product.code).map((c: comment) => {
