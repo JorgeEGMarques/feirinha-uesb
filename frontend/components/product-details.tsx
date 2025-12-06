@@ -48,7 +48,7 @@ export const ProductDetail = ({ product, comments, profiles }: ProductDetailsPro
         cpfUsuario: "12345678901",
       };
 
-      const baseUrl = "http://localhost:8080/crud/api";
+      const baseUrl = process.env.NEXT_PUBLIC_NGROK_URL || process.env.NGROK_URL || "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
 
       const response = await fetch(`${baseUrl}/comentarios`, {
         method: 'POST',

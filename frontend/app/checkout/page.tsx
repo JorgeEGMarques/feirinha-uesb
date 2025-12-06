@@ -52,19 +52,19 @@ export default function CheckoutsPage() {
         }))
       }
 
-      // const baseUrl = process.env.NEXT_PUBLIC_NGROK_URL || process.env.NGROK_URL || "http://localhost:8080/crud/api";
+      const baseUrl = process.env.NEXT_PUBLIC_NGROK_URL || process.env.NGROK_URL || "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
 
-      // const response = await fetch(`${baseUrl}/sales`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(saleData),
-      // })
+      const response = await fetch(`${baseUrl}/sales`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(saleData),
+      })
 
-      // if (!response.ok) {
-      //   throw new Error('Falha ao registrar venda')
-      // }
+      if (!response.ok) {
+        throw new Error('Falha ao registrar venda')
+      }
 
       clearCart()
       router.push("/success")

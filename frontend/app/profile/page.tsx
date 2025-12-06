@@ -13,17 +13,26 @@ interface NewTentForm {
   cpfHolder: string;
 }
 
+interface UserProfile {
+  nome: string;
+  email: string;
+  cpf: string;
+  fotoPerfil: string | null;
+  telefone: string;
+  senha: string;
+  tents: tent[];
+}
+
 export default function Profile() {
   const router = useRouter();
   const { logout } = useAuthStore();
 
-  const [tentId, setTentId] = useState<number>(8);
-  const [userProfile, setUserProfile] = useState<any>(null);
-  const [userTents, setUserTents] = useState<tent[]>([]); // Tipagem corrigida para array de tents
+  const [userProfile, setUserProfile] = useState<UserProfile>();
+  const [userTents, setUserTents] = useState<tent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [isModalOpen, setIsModalOpen] = useState(false); // Modal de Criar Barraca
-  const [editingTent, setEditingTent] = useState<tent | null>(null); // Modal de Editar Barraca (Armazena a barraca atual)
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTent, setEditingTent] = useState<tent | null>(null);
   
   const [error, setError] = useState('');
   
@@ -34,17 +43,29 @@ export default function Profile() {
   });
 
   useEffect(() => {
+    async function fetchData() {
+      const baseUrl = process.env.NGROK_URL || "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
+      const usuarios = await fetch(`${baseUrl}/usuarios`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      })
+        .then(response => response.json())
+        .catch(error => console.error('Error', error));
+      console.log('usuarios:', usuarios);
+    }
+
     const storedData = localStorage.getItem("userData");
+    
     if (storedData) {
-      const { user, tents } = JSON.parse(storedData);
-      setUserProfile(user);
-      setUserTents(tents || []);
-      
-      if(user?.cpf) {
-        setNewTentData(prev => ({...prev, cpfHolder: user.cpf}));
-      }
+        const parsedData = JSON.parse(storedData);
+        setUserProfile(parsedData);
     }
     setLoading(false);
+
+
+    fetchData();
   }, []);
 
   const updateLocalStorage = (tents: tent[]) => {
@@ -76,15 +97,32 @@ export default function Profile() {
       return;
     }
 
-    const baseUrl = "http://localhost:8080/crud/api";
+    const baseUrl = "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
 
-    const newTent: tent = {
-      code: Math.floor(Math.random() * 10000),
+    const newTent: any = {
       name: newTentData.name,
       userLicense: newTentData.userLicense,
       cpfHolder: newTentData.cpfHolder,
       items: [] 
     };
+
+    await fetch(`${baseUrl}/tents`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newTent)
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {console.log("Success", data)})
+    .catch(error => {
+      console.log('Error', error)
+    });
 
     const updatedTents = [...userTents, newTent];
     updateLocalStorage(updatedTents);
@@ -104,9 +142,9 @@ export default function Profile() {
   };
 
   // 2. Adiciona um novo item vazio à lista de itens da barraca em edição
-  const handleAddNewItem = () => {
+  const handleAddNewItem = async () => {
     if (!editingTent) return;
-    
+
     const newProduct: any = {
         name: "Novo Item",
         description: "Descrição do item",
@@ -119,6 +157,26 @@ export default function Profile() {
         stockQuantity: 1,
         product: newProduct
     };
+
+    // const baseUrl = process.env.NGROK_URL || "https://anja-superethical-appeasedly.ngrok-free.dev/crud/api";
+
+    // await fetch(`${baseUrl}/products`, {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify(newStockItem)
+    // })
+    // .then(response => {
+    //   if (!response.ok) {
+    //     throw new Error(`HTTP error! status: ${response.status}`);
+    //   }
+    //   return response.json(); // Parse the JSON response from the server
+    // })
+    // .then(data => {
+    //   console.log("success", data);
+    // })
+    // .catch(error => console.log('Error', error));
 
     setEditingTent({
       ...editingTent,
@@ -147,8 +205,6 @@ export default function Profile() {
   // 4. Salva as alterações da edição no estado principal e no LocalStorage
   const handleSaveEdits = async () => {
     if (!editingTent) return;
-
-    const baseUrl = process.env.NGROK_URL || "http://localhost:8080/crud/api";
 
     const updatedTents = userTents.map(t => 
         t.code === editingTent.code ? editingTent : t

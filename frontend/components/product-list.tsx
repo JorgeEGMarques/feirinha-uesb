@@ -11,8 +11,6 @@ interface ProductListProps {
 export const ProductList = ({products}: ProductListProps) => {
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  console.log(products)
-
   const filteredProducts = products.filter((product) => {
     const term = searchTerm.toLowerCase();
     const nameMatch = product.name.toLowerCase().includes(term);
