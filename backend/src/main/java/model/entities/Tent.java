@@ -7,7 +7,7 @@ public class Tent {
     private int code;
     private String cpfHolder;
     private String name;
-    private byte[] userLicense;
+    private String userLicense;
     private java.util.List<Stock> items; 
 
     /**
@@ -23,7 +23,7 @@ public class Tent {
      * @param name Nome da barraca.
      * @param userLicense Alvará de funcionamento (imagem/bytes).
      */
-    public Tent(int code, String cpfHolder, String name, byte[] userLicense){
+    public Tent(int code, String cpfHolder, String name, String userLicense){
         this.code = code;
         this.cpfHolder = cpfHolder;
         this.name = name;
@@ -58,7 +58,7 @@ public class Tent {
      * Obtém o alvará de funcionamento.
      * @return O alvará em bytes.
      */
-    public byte[] getUserLicense(){
+    public String getUserLicense(){
         return userLicense;
     }
     
@@ -74,7 +74,7 @@ public class Tent {
      * Define o alvará de funcionamento.
      * @param userLicense O novo alvará em bytes.
      */
-    public void setUserLicense(byte[] userLicense){
+    public void setUserLicense(String userLicense){
         this.userLicense = userLicense;
     }
 

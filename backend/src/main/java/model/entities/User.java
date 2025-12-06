@@ -1,5 +1,7 @@
 package model.entities;
 
+import java.util.List;
+
 /**
  * Representa um usuário do sistema.
  */
@@ -10,6 +12,7 @@ public class User {
     private String email;
     private String senha;
     private byte[] fotoPerfil;
+    private List<Tent> tents;
 
     /**
      * Construtor padrão.
@@ -123,5 +126,13 @@ public class User {
      */
     public void setFotoPerfil(byte[] fotoPerfil) {
         this.fotoPerfil = fotoPerfil;
+    }
+
+    public List<Tent> getTents() {
+        return tents;
+    }
+
+    public void setTents(List<Tent> tents) {
+        this.tents = tents;
     }
 }

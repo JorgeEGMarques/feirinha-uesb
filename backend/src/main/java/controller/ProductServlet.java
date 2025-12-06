@@ -73,6 +73,10 @@ public class ProductServlet extends HttpServlet {
                  sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'name' (nome_produto) é obrigatório.");
                  return;
             }
+            if (newProduct.getTentCode() == null) {
+                sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'tentCode' (cod_barraca) é obrigatório e deve referenciar uma barraca existente.");
+                return;
+            }
             if (newProduct.getPrice() == null) {
                  sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'price' (preco_produto) é obrigatório.");
                  return;
@@ -130,7 +134,7 @@ public class ProductServlet extends HttpServlet {
                 if (product == null) {
                     sendError(resp, HttpServletResponse.SC_NOT_FOUND, "Produto não encontrado.");
                 } else {
-                    resp.setStatus(HttpServletResponse.SC_OK); // 200
+                    resp.setStatus(HttpServletResponse.SC_OK); 
                     resp.getWriter().print(mapper.writeValueAsString(product));
                 }
             }
@@ -165,6 +169,11 @@ public class ProductServlet extends HttpServlet {
             
             Product product = mapper.readValue(jsonBody, Product.class);
             product.setCode(id); 
+
+            if (product.getTentCode() == null) {
+                sendError(resp, HttpServletResponse.SC_BAD_REQUEST, "O 'tentCode' (cod_barraca) é obrigatório e deve referenciar uma barraca existente.");
+                return;
+            }
 
             productDAO.update(product);
             

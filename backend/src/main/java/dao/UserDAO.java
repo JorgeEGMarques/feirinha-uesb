@@ -174,6 +174,13 @@ public class UserDAO {
         user.setSenha(rs.getString("senha"));
         byte[] foto = rs.getBytes("foto_perfil");
         user.setFotoPerfil(foto);
+
+        try {
+            dao.TentDAO tentDAO = new dao.TentDAO();
+            user.setTents(tentDAO.getByOwnerCpf(user.getCpf()));
+        } catch (SQLException e) {
+            throw e;
+        }
         return user;
     }
 }

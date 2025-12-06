@@ -19,7 +19,7 @@
 - Content-Type esperado: `application/json`
 - Datas: formato ISO `YYYY-MM-DD` (ex.: `"2025-11-25"`) — `ObjectMapper` tem `JavaTimeModule`.
 - Valores monetários: `BigDecimal`. JSON numérico funciona (ex.: `5.50`); para maior segurança use string (ex.: `"5.50"`).
-- `byte[]` (ex.: campo `userLicense` em `Tent`) → enviar base64 no JSON.
+-- `userLicense`: agora é uma `string` (ex.: campo `userLicense` em `Tent`). Envie uma string base64 ou uma URL no JSON.
 - Respostas típicas:
   - `201 Created` → criação bem-sucedida (POST)
   - `200 OK` → leitura/atualização bem-sucedida
@@ -73,11 +73,13 @@
 
 **Barracas (Tents)**
 - Mapeamento: `@WebServlet("/api/tents/*")`
-- Modelo: `code` (int), `cpfHolder` (owner CPF), `name`, `userLicense` (byte[] como Base64 no JSON)
+- Modelo: `code` (int), `cpfHolder` (owner CPF), `name`, `userLicense` (string — base64 ou URL no JSON)
 
 - Create: `POST /api/tents`
-  - Exemplo:
+  - Exemplo (base64):
     - `{"code":1,"cpfHolder":"11122233344","name":"Barraca A","userLicense":"dGVzdA=="}`
+  - Exemplo (URL):
+    - `{"code":1,"cpfHolder":"11122233344","name":"Barraca A","userLicense":"https://example.com/licenses/1.jpg"}`
   - Obs: `cpfHolder` deve existir na tabela `usuario` (FK); caso contrário o INSERT falhará.
 
 - Read/Update/Delete: `GET/PUT/DELETE /api/tents/{id}`

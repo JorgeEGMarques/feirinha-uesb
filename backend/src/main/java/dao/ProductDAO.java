@@ -24,10 +24,11 @@ public class ProductDAO {
      */
     public void create(Product product) throws SQLException {
         
-        String sql = "INSERT INTO public.produto (nome_produto, preco_produto, descricao_produto, imagem_produto) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO public.produto (nome_produto, preco_produto, descricao_produto, imagem_produto, cod_barraca) VALUES (?, ?, ?, ?, ?)";
         
         Connection conn = null;
         PreparedStatement stmt = null;
+        PreparedStatement stockStmt = null;
 
         try {
             conn = DatabaseConnection.getConnection();
@@ -42,6 +43,11 @@ public class ProductDAO {
             } else {
                 stmt.setNull(4, java.sql.Types.BINARY);
             }
+            if (product.getTentCode() != null) {
+                stmt.setInt(5, product.getTentCode());
+            } else {
+                stmt.setNull(5, java.sql.Types.INTEGER);
+            }
             
             int rowsAffected = stmt.executeUpdate();
             if (rowsAffected == 0) {
@@ -55,9 +61,20 @@ public class ProductDAO {
                     throw new SQLException("Falha ao criar produto, não obteve o ID.");
                 }
             }
+
+            if (product.getTentCode() != null) {
+                String stockSql = "INSERT INTO public.estoque (cod_prod, cod_barraca, qntd_estoque) VALUES (?, ?, ?) " +
+                                  "ON CONFLICT (cod_prod, cod_barraca) DO UPDATE SET qntd_estoque = public.estoque.qntd_estoque";
+                stockStmt = conn.prepareStatement(stockSql);
+                stockStmt.setInt(1, product.getCode());
+                stockStmt.setInt(2, product.getTentCode());
+                stockStmt.setShort(3, (short)0);
+                stockStmt.executeUpdate();
+            }
             
         } finally {
             if (stmt != null) stmt.close();
+            if (stockStmt != null) stockStmt.close();
             if (conn != null) conn.close();
         }
     }
@@ -114,7 +131,7 @@ public class ProductDAO {
      * @throws SQLException Se ocorrer um erro ao acessar o banco de dados.
      */
     public void update(Product product) throws SQLException {
-        String sql = "UPDATE public.produto SET nome_produto = ?, preco_produto = ?, descricao_produto = ?, imagem_produto = ? WHERE cod_produto = ?";
+        String sql = "UPDATE public.produto SET nome_produto = ?, preco_produto = ?, descricao_produto = ?, imagem_produto = ?, cod_barraca = ? WHERE cod_produto = ?";
         
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -127,7 +144,12 @@ public class ProductDAO {
             } else {
                 stmt.setNull(4, java.sql.Types.BINARY);
             }
-            stmt.setInt(5, product.getCode());
+            if (product.getTentCode() != null) {
+                stmt.setInt(5, product.getTentCode());
+            } else {
+                stmt.setNull(5, java.sql.Types.INTEGER);
+            }
+            stmt.setInt(6, product.getCode());
             
             stmt.executeUpdate();
         }
@@ -158,14 +180,20 @@ public class ProductDAO {
      * @throws SQLException Se ocorrer um erro ao ler o ResultSet.
      */
     private Product mapRowToProduct(ResultSet rs) throws SQLException {
-        Product p = new Product(); 
-        
+        Product p = new Product();
+
         p.setCode(rs.getInt("cod_produto"));
         p.setName(rs.getString("nome_produto"));
         p.setPrice(rs.getBigDecimal("preco_produto"));
         p.setDescription(rs.getString("descricao_produto"));
         byte[] img = rs.getBytes("imagem_produto");
         p.setImagem(img);
+        int tent = rs.getInt("cod_barraca");
+        if (rs.wasNull()) {
+            p.setTentCode(null);
+        } else {
+            p.setTentCode(tent);
+        }
         return p;
     }
 }

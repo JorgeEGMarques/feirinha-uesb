@@ -11,6 +11,7 @@ public class Product {
     private BigDecimal price;
     private String description;
     private byte[] imagem;
+    private Integer tentCode; 
 
     /**
      * Construtor padrão.
@@ -47,6 +48,11 @@ public class Product {
         this.price = price;
         this.description = description;
         this.imagem = imagem;
+    }
+
+    public Product(int code, String name, BigDecimal price, String description, byte[] imagem, Integer tentCode){
+        this(code, name, price, description, imagem);
+        this.tentCode = tentCode;
     }
 
     /**
@@ -89,6 +95,8 @@ public class Product {
         return imagem;
     }
 
+    public Integer getTentCode() { return tentCode; }
+
     /**
      * Define o código do produto.
      * @param code O novo código.
@@ -128,4 +136,6 @@ public class Product {
     public void setImagem(byte[] imagem) {
         this.imagem = imagem;
     }
+
+    public void setTentCode(Integer tentCode) { this.tentCode = tentCode; }
 }

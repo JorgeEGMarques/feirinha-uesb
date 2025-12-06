@@ -32,22 +32,29 @@ public class CorsFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         HttpServletRequest httpRequest = (HttpServletRequest) request;
 
-        // Permite que qualquer origem (ou seu localhost:3000) acesse
-        httpResponse.setHeader("Access-Control-Allow-Origin", "*");
-        
-        // Métodos que o React pode usar
-        httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        
-        // Headers que o React pode enviar (incluindo o 'Authorization' para JWTs)
-        httpResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+        String origin = httpRequest.getHeader("Origin");
+        if (origin != null && !origin.isEmpty()) {
+            httpResponse.setHeader("Access-Control-Allow-Origin", origin);
+            httpResponse.setHeader("Vary", "Origin");
+        } else {
+            httpResponse.setHeader("Access-Control-Allow-Origin", "*");
+        }
 
-        // Permite que o navegador pré-verifique a requisição (OPTIONS)
+        httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        String reqHeaders = httpRequest.getHeader("Access-Control-Request-Headers");
+        String defaultAllowed = "Content-Type, Authorization, X-Requested-With";
+        String allowedHeaders = (reqHeaders != null && !reqHeaders.isEmpty()) ? reqHeaders + ", " + defaultAllowed : defaultAllowed;
+        httpResponse.setHeader("Access-Control-Allow-Headers", allowedHeaders);
+
+        httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
+
+        httpResponse.setHeader("Access-Control-Expose-Headers", "Location,Content-Type");
+
         if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
             httpResponse.setStatus(HttpServletResponse.SC_OK);
             return;
         }
 
-        // Continua o fluxo normal da requisição (ex: vai para o HelloServlet)
         chain.doFilter(request, response);
     }
 }

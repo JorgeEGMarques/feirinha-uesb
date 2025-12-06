@@ -47,7 +47,7 @@ public class StockDAO {
      */
     public List<Stock> getByTentId(int tentId) throws SQLException {
         List<Stock> stocks = new ArrayList<>();
-        // JOIN para pegar os dados do produto
+
         String sql = "SELECT e.*, p.* FROM public.estoque e " +
                      "JOIN public.produto p ON e.cod_prod = p.cod_produto " +
                      "WHERE e.cod_barraca = ?";
@@ -60,8 +60,7 @@ public class StockDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Stock s = mapRow(rs);
-                    
-                    // Mapear Produto
+
                     model.entities.Product p = new model.entities.Product();
                     p.setCode(rs.getInt("cod_produto"));
                     p.setName(rs.getString("nome_produto"));
