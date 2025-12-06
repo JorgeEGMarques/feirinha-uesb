@@ -62,13 +62,14 @@ public class ProductDAO {
                 }
             }
 
-            if (product.getTentCode() != null) {
+            if (product.getTentCode() != null && product.getTentCode() > 0) {
                 String stockSql = "INSERT INTO public.estoque (cod_prod, cod_barraca, qntd_estoque) VALUES (?, ?, ?) " +
-                                  "ON CONFLICT (cod_prod, cod_barraca) DO UPDATE SET qntd_estoque = public.estoque.qntd_estoque";
+                                  "ON CONFLICT (cod_prod, cod_barraca) DO UPDATE SET qntd_estoque = EXCLUDED.qntd_estoque";
                 stockStmt = conn.prepareStatement(stockSql);
                 stockStmt.setInt(1, product.getCode());
                 stockStmt.setInt(2, product.getTentCode());
-                stockStmt.setShort(3, (short)0);
+                short initialQty = 1; // garantir quantidade positiva
+                stockStmt.setShort(3, initialQty);
                 stockStmt.executeUpdate();
             }
             

@@ -9,9 +9,9 @@ import java.sql.SQLException;
  */
 public class DatabaseConnection {
 
-    private static final String JDBC_URL = "";    
-    private static final String JDBC_USER = "";
-    private static final String JDBC_PASSWORD = ""; 
+    private static final String JDBC_URL = "jdbc:postgresql://localhost:5432/feirinha_db2";    
+    private static final String JDBC_USER = "carlos";
+    private static final String JDBC_PASSWORD = "65676861"; 
 
     /**
      * Obtém uma nova conexão com o banco de dados.
