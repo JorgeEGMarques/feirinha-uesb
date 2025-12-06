@@ -7,13 +7,13 @@ import { comment, product, profile } from "@/utils/types"
 import { Button } from "./ui/button";
 import { useCartStore } from "@/store/cart-store";
 import { imageConverter } from "@/utils/image-converter";
-import { ShoppingCart, Store } from "lucide-react"; // Sugestão: ícones para melhor visual
+import { ShoppingCart, Store } from "lucide-react";
 
 interface ProductDetailsProps {
   product: product;
   comments: comment[];
   profiles: profile[];
-  tentName: string; // 1. Nova Prop para o nome da barraca
+  tentName: string;
 }
 
 export const ProductDetail = ({ product, comments, profiles, tentName }: ProductDetailsProps) => {
@@ -36,12 +36,11 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
     })
   }
 
-  // 2. Função para "Comprar Agora" (Checkout direto)
   const handleBuyNow = () => {
     if (quantity === 0) {
       onAddItem();
     }
-    router.push("/carrinho"); // Ajuste para sua rota de checkout/carrinho
+    router.push("/carrinho");
   };
 
   const handleSendComment = async (e: React.FormEvent) => {
@@ -54,7 +53,7 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
       const payload = {
         texto: newCommentText,  
         codProd: product.code,
-        tentCode: product.tentCode || 1, // Melhoria: Tenta pegar do produto, fallback para 1
+        tentCode: product.tentCode || 1,
         cpfUsuario: "12345678901",
       };
 
@@ -87,7 +86,6 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
     <div>
       <div className="container mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-start"> {/* items-center -> items-start para melhor alinhamento */}
         
-        {/* Imagem do Produto */}
         <div className="relative h-96 w-full md:w-1/2 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
           <Image
             src={imageConverter(product.imagem)}
@@ -99,11 +97,9 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
           />
         </div>
 
-        {/* Detalhes do Produto */}
         <div className="md:w-1/2 flex flex-col justify-between h-full space-y-6">
           <div>
-            {/* 3. Exibição do Nome da Barraca */}
-            <div className="flex items-center gap-2 text-indigo-600 mb-2">
+            <div className="flex items-center gap-2 text-black-600 mb-2">
               <Store size={18} />
               <span className="text-sm font-semibold uppercase tracking-wider">
                 Vendido por {tentName}
@@ -128,7 +124,6 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
           </div>
 
           <div className="space-y-4">
-            {/* Controles de Quantidade */}
             <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg p-2 w-full md:w-64">
                 <span className="text-gray-500 text-sm ml-2">Quantidade:</span>
                 <div className="flex items-center gap-4">
@@ -152,7 +147,6 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
                 </div>
             </div>
 
-            {/* 4. Botão de Checkout / Comprar Agora */}
             <Button 
                 className="w-full md:w-auto px-8 py-6 text-lg bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all hover:-translate-y-1 flex items-center justify-center gap-2"
                 onClick={handleBuyNow}
@@ -164,13 +158,11 @@ export const ProductDetail = ({ product, comments, profiles, tentName }: Product
         </div>
       </div>
 
-      {/* Seção de Comentários (Manteve-se a mesma lógica, apenas ajustes visuais se necessário) */}
       <div className="space-y-6 mt-12 container mx-auto px-4 max-w-4xl">
         <h3 className="text-2xl font-bold text-gray-900 border-b pb-4">
           Avaliações dos Clientes
         </h3>
         
-        {/* ... restante do código de comentários igual ... */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
           <h4 className="text-md font-semibold text-gray-800 mb-2">Deixe sua avaliação</h4>
           <form onSubmit={handleSendComment}>

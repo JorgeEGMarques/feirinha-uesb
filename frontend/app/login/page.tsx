@@ -18,7 +18,6 @@ export default function Login() {
   const [password, setPassword] = useState<string>('');
   const [message, setMessage] = useState<Message | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isRegistering, setIsRegistering] = useState<boolean>(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,7 +46,7 @@ export default function Login() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return response.json(); // Parse the JSON response from the server
+      return response.json();
     })
     .then(data => {
       loginAction(JSON.stringify(data));
@@ -81,7 +80,6 @@ export default function Login() {
     <div className="flex items-center justify-center">
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl p-8 space-y-8 border border-gray-100 transition-all duration-300 hover:shadow-3xl">
         
-        {/* Cabeçalho */}
         <div className="text-center">
           <LogIn className="w-12 h-12 mx-auto text-black-600 mb-3" />
           <h1 className="text-3xl font-extrabold text-gray-900">
@@ -92,9 +90,7 @@ export default function Login() {
           </p>
         </div>
 
-        {/* Formulário de Login */}
         <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* Campo de Email */}
           <div>
             <label 
               htmlFor="email" 
@@ -121,7 +117,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Campo de Senha */}
           <div>
             <label 
               htmlFor="password" 
@@ -148,33 +143,30 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Opções (Esqueceu a senha) */}
           <div className="flex items-center justify-end">
             <div className="text-sm">
               <a 
                 href="#" 
                 className="font-medium text-black-600 hover:text-gray-500 transition duration-150 ease-in-out"
-                onClick={handleForgotPassword} // Usando a nova função tipada
+                onClick={handleForgotPassword}
               >
                 Esqueceu a senha?
               </a>
             </div>
           </div>
   
-          {/* Opções (Cadastrar usuario) */}
           <div className="flex items-center justify-end">
             <div className="text-sm">
               <a 
                 href="#" 
                 className="font-medium text-black-600 hover:text-gray-500 transition duration-150 ease-in-out"
-                onClick={handleRegister} // Usando a nova função tipada
+                onClick={handleRegister}
               >
                 Cadastrar-se
               </a>
             </div>
           </div>
           
-          {/* Mensagem de Status */}
           {message && (
             <div className={`p-3 rounded-lg text-sm font-medium ${
               message.type === 'error' ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-green-100 text-green-700 border border-green-300'
@@ -183,11 +175,10 @@ export default function Login() {
             </div>
           )}
 
-          {/* Botão de Entrar */}
           <div className="max-w-md mx-auto">
             <Button
               type="submit"
-              disabled={isLoading} // Desabilita o botão durante o carregamento
+              disabled={isLoading}
               variant="default"
               className="w-full"
             >

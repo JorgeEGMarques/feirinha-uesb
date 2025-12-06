@@ -86,7 +86,6 @@ export default function Register() {
     <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-xl shadow-2xl p-8 space-y-6 border border-gray-100 transition-all duration-300 hover:shadow-3xl">
         
-        {/* Cabeçalho */}
         <div className="text-center">
           <UserPlus className="w-12 h-12 mx-auto text-indigo-600 mb-3" />
           <h1 className="text-3xl font-extrabold text-gray-900">
@@ -97,10 +96,8 @@ export default function Register() {
           </p>
         </div>
 
-        {/* Formulário */}
         <form className="space-y-4" onSubmit={handleSubmit}>
           
-          {/* Nome */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
             <div className="relative">
@@ -120,7 +117,6 @@ export default function Register() {
             </div>
           </div>
 
-          {/* CPF */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
             <div className="relative">
@@ -140,7 +136,6 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Telefone */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
             <div className="relative">
@@ -160,7 +155,6 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <div className="relative">
@@ -181,7 +175,6 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Senha */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
             <div className="relative">
@@ -201,7 +194,6 @@ export default function Register() {
             </div>
           </div>
 
-          {/* Mensagem de Status */}
           {message && (
             <div className={`p-3 rounded-lg text-sm font-medium ${
               message.type === 'error' ? 'bg-red-100 text-red-700 border border-red-300' : 'bg-green-100 text-green-700 border border-green-300'
@@ -210,7 +202,6 @@ export default function Register() {
             </div>
           )}
 
-          {/* Botões */}
           <div className="space-y-3 pt-2">
             <Button
               type="submit"

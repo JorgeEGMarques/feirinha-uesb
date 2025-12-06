@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react';
-import { User, Store, X, Pencil, Plus, Save } from 'lucide-react'; // Novos ícones importados
+import { User, Store, X, Pencil, Plus, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
 import { useRouter } from 'next/navigation';
@@ -12,30 +12,6 @@ interface NewTentForm {
   userLicense: string;
   cpfHolder: string;
 }
-
-// interface Product {
-//   code: number;
-//   name: string;
-//   price: number;
-//   description?: string;
-//   imagem?: string | null;
-//   tentCode: number;
-// }
-
-// interface Item {
-//   productCode: number;
-//   tentCode: number;
-//   stockQuantity: number;
-//   product?: Product;
-// }
-
-// interface Tent {
-//   code: number;
-//   cpfHolder: string;
-//   name: string;
-//   userLicense: string;
-//   items: Item[];
-// }
 
 export default function Profile() {
   const router = useRouter();
@@ -163,7 +139,7 @@ export default function Profile() {
         tentCode: editingTent.code,
         stockQuantity: 1,
         product: newProduct,
-        isNew: true // <--- ADICIONE ESTA FLAG
+        isNew: true
     };
 
     setEditingTent({
@@ -198,22 +174,17 @@ export default function Profile() {
     try {
         const createdStockItems = await Promise.all(newItems.map(async (item: any) => {
 
-            // Certifique-se de que o preço não é zero se o banco não permitir
             const priceToSend = Number(item.product.price) <= 0 ? 0.01 : Number(item.product.price);
 
             const safeQuantity = item.stockQuantity && item.stockQuantity > 0 ? item.stockQuantity : 1;
 
-            // 2. Correção de Preço: Garante que não é zero
             const safePrice = Number(item.product.price) > 0 ? Number(item.product.price) : 0.01;
 
             const payload = {
               tentCode: item.tentCode,
-
-              // ESTRATÉGIA "TENTATIVA TRIPLA":
-              // Enviamos com 3 nomes diferentes para garantir que o Backend Java (DTO) pegue um deles.
               stockQuantity: safeQuantity, 
               quantity: safeQuantity,      
-              quantidade: safeQuantity,    // Muito provável que seja este, dado o nome do erro (chk_estoque_qntd...)
+              quantidade: safeQuantity,
 
               name: item.product.name,
               description: item.product.description,
@@ -266,9 +237,6 @@ export default function Profile() {
 
         const updatedTentFromServer = await putResponse.json();
 
-        // Se o updatedTentFromServer vier sem os itens detalhados (apenas IDs),
-        // pode ser necessário usar 'tentUpdatePayload' temporariamente ou fazer um refetch.
-        // Assumindo que o server retorna completo:
         const updatedTentsList = user.tents.map((t: tent) => 
             t.code === editingTent.code ? updatedTentFromServer : t
         );
@@ -291,7 +259,6 @@ export default function Profile() {
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8 flex justify-center relative">
       <div className="w-full max-w-4xl space-y-8">
 
-        {/* --- Cartão de Perfil --- */}
         <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
           <div className="flex-shrink-0">
               <div className="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center">
@@ -311,7 +278,6 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* --- Lista de Barracas --- */}
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center">
             <Store className="w-6 h-6 text-pink-500 mr-2" /> Minhas Barracas ({user?.tents.length})
@@ -321,13 +287,12 @@ export default function Profile() {
             {user?.tents.map((t: tent) => (
               <div key={t.code} className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-pink-500 relative hover:shadow-xl transition">
                 
-                {/* Cabeçalho do Card da Barraca */}
                 <div className='flex justify-between items-start mb-4'>
                   <div>
                     <h3 className="text-xl font-bold text-gray-800">{t.name}</h3>
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Licença: {t.userLicense}</span>
                   </div>
-                  {/* Botão de Editar Barraca */}
+
                   <Button 
                     variant="ghost" 
                     size="sm" 
@@ -338,12 +303,11 @@ export default function Profile() {
                   </Button>
                 </div>
                 
-                {/* Listagem Resumida de Itens */}
                 {(!t.items || t.items.length === 0) ? (
                    <p className="text-sm text-gray-400">Nenhum produto cadastrado.</p>
                 ) : (
                   <div className="space-y-3">
-                     {t.items.slice(0, 3).map((s: stock) => ( // Mostra apenas os 3 primeiros
+                     {t.items.slice(0, 3).map((s: stock) => (
                       <div key={s.productCode} className="flex justify-between text-sm border-b border-gray-100 pb-1">
                           <span className="text-gray-700 font-medium">{s.product.name}</span>
                           <span className="text-gray-500">Qtd: {s.stockQuantity}</span>
@@ -358,7 +322,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* --- MODAL DE CRIAR NOVA BARRACA --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
@@ -377,12 +340,10 @@ export default function Profile() {
         </div>
       )}
 
-      {/* --- MODAL DE EDITAR BARRACA (Gerenciar Itens) --- */}
       {editingTent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             
-            {/* Header do Modal */}
             <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center flex-shrink-0">
               <h3 className="text-lg font-bold text-white flex items-center">
                 <Pencil className="w-5 h-5 mr-2" /> Editando: {editingTent.name}
@@ -392,7 +353,6 @@ export default function Profile() {
               </button>
             </div>
 
-            {/* Corpo com Scroll */}
             <div className="p-6 overflow-y-auto flex-grow bg-gray-50">
                 
                 <div className="flex justify-between items-center mb-4">
@@ -461,7 +421,6 @@ export default function Profile() {
                 )}
             </div>
 
-            {/* Footer Fixo */}
             <div className="p-4 bg-white border-t flex justify-end space-x-3 flex-shrink-0">
                 <Button variant="outline" onClick={() => setEditingTent(null)}>Cancelar</Button>
                 <Button onClick={handleSaveEdits} className="bg-indigo-600 hover:bg-indigo-500">
